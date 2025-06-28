@@ -133,13 +133,13 @@ genero = st.session_state.genero_selecionado
 # Filtra por gênero
 df_filtrado = df_plataforma[df_plataforma['Genre'] == genero]
 
-# Exibe lista de jogos
+# Exibe lista de jogos (sem duplicados, sem índice)
 st.subheader(f"📋 Jogos para {plataforma} no gênero '{genero}'")
-st.dataframe(df_filtrado[['Game Title']].reset_index(drop=True))
+st.table(df_filtrado[['Game Title']].drop_duplicates().reset_index(drop=True))
 
 # Detalhes
 st.subheader("🔍 Detalhes do Jogo Selecionado")
-titulos_filtrados = df_filtrado['Game Title'].unique()
+titulos_filtrados = df_filtrado['Game Title'].drop_duplicates().unique()
 
 if len(titulos_filtrados) == 0:
     st.warning("⚠️ Nenhum jogo encontrado com os filtros selecionados.")
