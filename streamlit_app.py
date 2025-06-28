@@ -38,8 +38,7 @@ st.subheader("🕹️ Selecione uma plataforma:")
 colunas = st.columns(len(plataformas_disponiveis))
 for i, plataforma in enumerate(plataformas_disponiveis):
     with colunas[i]:
-        clicou = st.button(plataforma, key=f"plataforma_{plataforma}")
-        if clicou:
+        if st.button(plataforma, key=f"botao_{plataforma}"):
             st.session_state.plataforma_selecionada = plataforma
 
 # Redesenha os ícones com o efeito na imagem selecionada
@@ -49,18 +48,18 @@ for i, plataforma in enumerate(plataformas_disponiveis):
         if st.session_state.plataforma_selecionada == plataforma:
             components.html(f"""
                 <style>
-                    .pulse {{
-                        animation: pulse 1s infinite;
-                        width: 80px;
-                    }}
                     @keyframes pulse {{
                         0% {{ transform: scale(1); }}
                         50% {{ transform: scale(1.1); }}
                         100% {{ transform: scale(1); }}
                     }}
+                    .pulse {{
+                        animation: pulse 1s infinite;
+                        width: 80px;
+                    }}
                 </style>
                 <div style="text-align:center;">
-                    <img src="{imagens_plataformas[plataforma]}" class="pulse" alt="{plataforma}">
+                    <img src="{imagens_plataformas[plataforma]}" class="pulse">
                     <p>{plataforma}</p>
                 </div>
             """, height=130)
