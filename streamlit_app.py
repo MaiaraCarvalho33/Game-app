@@ -13,14 +13,16 @@ except FileNotFoundError:
     st.markdown("Faça upload manual ou baixe de: [Kaggle - Video Game Reviews](https://www.kaggle.com/datasets/jahnavipaliwal/video-game-reviews-and-ratings)")
     st.stop()
 
-# Inicializa estado
+# Estado inicial
 if "plataforma_selecionada" not in st.session_state:
     st.session_state.plataforma_selecionada = None
+if "genero_selecionado" not in st.session_state:
+    st.session_state.genero_selecionado = None
 
 # Título
 st.title("🎮 Análise Interativa de Reviews de Jogos")
 
-# Imagens por plataforma
+# Imagens das plataformas
 imagens_plataformas = {
     'PC': 'https://cdn-icons-png.flaticon.com/512/732/732225.png',
     'PlayStation': 'https://upload.wikimedia.org/wikipedia/commons/4/4e/Playstation_logo_colour.svg',
@@ -29,10 +31,8 @@ imagens_plataformas = {
     'Nintendo Switch': 'https://www.nintendo.co.jp/common/v2/img/ncommon/_common/logo/switch.svg'
 }
 
-# Plataformas disponíveis no dataset
-plataformas_disponiveis = [p for p in imagens_plataformas.keys() if p in df['Platform'].unique()]
-
-# Interface visual com pulse apenas na plataforma selecionada
+# Seleção de plataforma
+plataformas_disponiveis = [p for p in imagens_plataformas if p in df['Platform'].unique()]
 st.subheader("🕹️ Selecione uma plataforma:")
 
 colunas = st.columns(len(plataformas_disponiveis))
@@ -41,7 +41,6 @@ for i, plataforma in enumerate(plataformas_disponiveis):
         if st.button(plataforma, key=f"botao_{plataforma}"):
             st.session_state.plataforma_selecionada = plataforma
 
-# Redesenha os ícones com o efeito na imagem selecionada
 colunas2 = st.columns(len(plataformas_disponiveis))
 for i, plataforma in enumerate(plataformas_disponiveis):
     with colunas2[i]:
@@ -66,22 +65,50 @@ for i, plataforma in enumerate(plataformas_disponiveis):
         else:
             st.image(imagens_plataformas[plataforma], width=80, caption=plataforma)
 
-# Se nenhuma plataforma foi escolhida ainda
+# Fim da seleção de plataforma
 if not st.session_state.plataforma_selecionada:
     st.stop()
 
-# Dados filtrados
+# Filtra dataset pela plataforma
 plataforma = st.session_state.plataforma_selecionada
 df_plataforma = df[df['Platform'] == plataforma]
 
-# Gêneros disponíveis
-generos = df_plataforma['Genre'].dropna().unique()
-genero = st.selectbox("📂 Escolha um gênero:", sorted(generos))
+# Ícones para gêneros
+icones_generos = {
+    'Action': 'https://cdn-icons-png.flaticon.com/512/16391/16391182.png',
+    'Adventure': 'https://cdn-icons-png.flaticon.com/512/5064/5064012.png',
+    'RPG': 'https://cdn-icons-png.flaticon.com/512/10069/10069327.png',
+    'Shooter': 'https://cdn-icons-png.flaticon.com/512/1030/1030305.png',
+    'Puzzle': 'https://cdn-icons-png.flaticon.com/512/3162/3162297.png',
+    'Sports': 'https://cdn-icons-png.flaticon.com/512/4163/4163679.png',
+    'Racing': 'https://cdn-icons-png.flaticon.com/512/4259/4259278.png',
+    'Fighting': 'https://cdn-icons-png.flaticon.com/512/2735/2735992.png',
+    'Simulation': 'https://cdn-icons-png.flaticon.com/512/12011/12011550.png',
+    'Strategy': 'https://cdn-icons-png.flaticon.com/512/3281/3281104.png',
+    'Platformer': 'https://cdn-icons-png.flaticon.com/512/7401/7401039.png'
+}
+
+# Gêneros disponíveis no dataset da plataforma
+generos_disponiveis = [g for g in icones_generos if g in df_plataforma['Genre'].unique()]
+st.subheader("🎭 Selecione um gênero:")
+
+colunas_gen = st.columns(len(generos_disponiveis))
+for i, genero_nome in enumerate(generos_disponiveis):
+    with colunas_gen[i]:
+        if st.button(genero_nome, key=f"botao_genero_{genero_nome}"):
+            st.session_state.genero_selecionado = genero_nome
+        st.image(icones_generos[genero_nome], width=50)
+
+# Validação
+if not st.session_state.genero_selecionado:
+    st.stop()
+
+genero = st.session_state.genero_selecionado
 
 # Filtra por gênero
 df_filtrado = df_plataforma[df_plataforma['Genre'] == genero]
 
-# Exibe jogos
+# Exibe lista de jogos
 st.subheader(f"📋 Jogos para {plataforma} no gênero '{genero}'")
 st.dataframe(df_filtrado[['Game Title']].reset_index(drop=True))
 
