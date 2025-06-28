@@ -86,7 +86,7 @@ st.subheader(f"📋 Jogos para {plataforma} no gênero '{genero}'")
 st.dataframe(df_filtrado[['Game Title']].reset_index(drop=True))
 
 # Detalhes
-st.subheader("🔍 Detalhes do Jogo Selecionado")
+st.subheader("🔍 Detalhes do Jgo Selecionado")
 titulos_filtrados = df_filtrado['Game Title'].unique()
 
 if len(titulos_filtrados) == 0:
