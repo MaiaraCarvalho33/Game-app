@@ -1,158 +1,579 @@
 import streamlit as st
 import pandas as pd
+import plotly.express as px
+import matplotlib.pyplot as plt
+from wordcloud import WordCloud
 import streamlit.components.v1 as components
 
 # Configuração da página
 st.set_page_config(page_title="Reviews de Jogos", layout="wide")
 
-# Carrega o dataset
+# Abas
+abas = {
+    "🏠 Página Inicial": "inicio",
+    "📊 Estatísticas": "estatisticas",
+    "🎯 Sugestões Personalizadas": "recomendador",
+    "🔍 Buscador de Jogos": "buscar",
+    "💬 Análise de Reviews": "reviews",
+    "📘 Sobre": "sobre"
+}
+
+cols = st.columns(len(abas))
+if "aba_ativa" not in st.session_state:
+    st.session_state.aba_ativa = "inicio"
+for i, (nome, chave) in enumerate(abas.items()):
+    with cols[i]:
+        if st.button(nome):
+            st.session_state.aba_ativa = chave
+aba = st.session_state.aba_ativa
+
+# Carrega dados
 try:
     df = pd.read_csv("video_game_reviews.csv")
 except FileNotFoundError:
     st.error("❌ Arquivo 'video_game_reviews.csv' não encontrado.")
-    st.markdown("Faça upload manual ou baixe de: [Kaggle - Video Game Reviews](https://www.kaggle.com/datasets/jahnavipaliwal/video-game-reviews-and-ratings)")
+    st.markdown("📥 Baixe em: [Kaggle - Video Game Reviews](https://www.kaggle.com/datasets/jahnavipaliwal/video-game-reviews-and-ratings)")
     st.stop()
 
-# Estado inicial
-if "plataforma_selecionada" not in st.session_state:
-    st.session_state.plataforma_selecionada = None
-if "genero_selecionado" not in st.session_state:
-    st.session_state.genero_selecionado = None
+# ======================= INÍCIO ========================
+if aba == "inicio":
+    st.title("🎮 Análise Interativa de Reviews de Jogos")
 
-# Título
-st.title("🎮 Análise Interativa de Reviews de Jogos")
+    imagens_plataformas = {
+        'PC': 'https://cdn-icons-png.flaticon.com/512/732/732225.png',
+        'PlayStation': 'https://upload.wikimedia.org/wikipedia/commons/4/4e/Playstation_logo_colour.svg',
+        'Xbox': 'https://upload.wikimedia.org/wikipedia/commons/f/f9/Xbox_one_logo.svg',
+        'Mobile': 'https://upload.wikimedia.org/wikipedia/commons/2/2d/Mobile-Smartphone-icon.png',
+        'Nintendo Switch': 'https://www.nintendo.co.jp/common/v2/img/ncommon/_common/logo/switch.svg'
+    }
 
-# Imagens das plataformas
-imagens_plataformas = {
-    'PC': 'https://cdn-icons-png.flaticon.com/512/732/732225.png',
-    'PlayStation': 'https://upload.wikimedia.org/wikipedia/commons/4/4e/Playstation_logo_colour.svg',
-    'Xbox': 'https://upload.wikimedia.org/wikipedia/commons/f/f9/Xbox_one_logo.svg',
-    'Mobile': 'https://upload.wikimedia.org/wikipedia/commons/2/2d/Mobile-Smartphone-icon.png',
-    'Nintendo Switch': 'https://www.nintendo.co.jp/common/v2/img/ncommon/_common/logo/switch.svg'
-}
+    if "plataforma_selecionada" not in st.session_state:
+        st.session_state.plataforma_selecionada = None
+    if "genero_selecionado" not in st.session_state:
+        st.session_state.genero_selecionado = None
 
-# Seleção de plataforma
-plataformas_disponiveis = [p for p in imagens_plataformas if p in df['Platform'].unique()]
-st.subheader("🕹️ Selecione uma plataforma:")
+    plataformas_disponiveis = [p for p in imagens_plataformas if p in df['Platform'].unique()]
+    st.subheader("🕹️ Selecione uma plataforma:")
 
-colunas = st.columns(len(plataformas_disponiveis))
-for i, plataforma in enumerate(plataformas_disponiveis):
-    with colunas[i]:
-        if st.button(plataforma, key=f"botao_{plataforma}"):
-            st.session_state.plataforma_selecionada = plataforma
+    colunas = st.columns(len(plataformas_disponiveis))
+    for i, plataforma in enumerate(plataformas_disponiveis):
+        with colunas[i]:
+            if st.button(plataforma, key=f"botao_{plataforma}"):
+                st.session_state.plataforma_selecionada = plataforma
 
-colunas2 = st.columns(len(plataformas_disponiveis))
-for i, plataforma in enumerate(plataformas_disponiveis):
-    with colunas2[i]:
-        if st.session_state.plataforma_selecionada == plataforma:
-            components.html(f"""
-                <style>
-                    @keyframes pulse {{
-                        0% {{ transform: scale(1); }}
-                        50% {{ transform: scale(1.1); }}
-                        100% {{ transform: scale(1); }}
-                    }}
-                    .pulse {{
-                        animation: pulse 1s infinite;
-                        width: 80px;
-                    }}
-                </style>
-                <div style="text-align:center;">
-                    <img src="{imagens_plataformas[plataforma]}" class="pulse">
-                    <p>{plataforma}</p>
-                </div>
-            """, height=130)
-        else:
-            st.image(imagens_plataformas[plataforma], width=80, caption=plataforma)
+    colunas2 = st.columns(len(plataformas_disponiveis))
+    for i, plataforma in enumerate(plataformas_disponiveis):
+        with colunas2[i]:
+            if st.session_state.plataforma_selecionada == plataforma:
+                components.html(f"""
+                    <style>
+                        @keyframes pulse {{
+                            0% {{ transform: scale(1); }}
+                            50% {{ transform: scale(1.1); }}
+                            100% {{ transform: scale(1); }}
+                        }}
+                        .pulse {{
+                            animation: pulse 1s infinite;
+                            width: 80px;
+                        }}
+                    </style>
+                    <div style="text-align:center;">
+                        <img src="{imagens_plataformas[plataforma]}" class="pulse">
+                        <p>{plataforma}</p>
+                    </div>
+                """, height=130)
+            else:
+                st.image(imagens_plataformas[plataforma], width=80, caption=plataforma)
 
-# Fim da seleção de plataforma
-if not st.session_state.plataforma_selecionada:
-    st.stop()
+    if not st.session_state.plataforma_selecionada:
+        st.stop()
 
-# Filtra dataset pela plataforma
-plataforma = st.session_state.plataforma_selecionada
-df_plataforma = df[df['Platform'] == plataforma]
+    plataforma = st.session_state.plataforma_selecionada
+    df_plataforma = df[df['Platform'] == plataforma]
 
-# Ícones para gêneros
-icones_generos = {
-    'Action': 'https://cdn-icons-png.flaticon.com/512/16391/16391182.png',
-    'Adventure': 'https://cdn-icons-png.flaticon.com/512/5064/5064012.png',
-    'RPG': 'https://cdn-icons-png.flaticon.com/512/10069/10069327.png',
-    'Shooter': 'https://cdn-icons-png.flaticon.com/512/1030/1030305.png',
-    'Puzzle': 'https://cdn-icons-png.flaticon.com/512/3162/3162297.png',
-    'Sports': 'https://cdn-icons-png.flaticon.com/512/4163/4163679.png',
-    'Racing': 'https://cdn-icons-png.flaticon.com/512/4259/4259278.png',
-    'Fighting': 'https://cdn-icons-png.flaticon.com/512/2735/2735992.png',
-    'Simulation': 'https://cdn-icons-png.flaticon.com/512/12011/12011550.png',
-    'Strategy': 'https://cdn-icons-png.flaticon.com/512/3281/3281104.png',
-    'Platformer': 'https://cdn-icons-png.flaticon.com/512/7401/7401039.png'
-}
+    icones_generos = {
+        'Action': 'https://cdn-icons-png.flaticon.com/512/16391/16391182.png',
+        'Adventure': 'https://cdn-icons-png.flaticon.com/512/5064/5064012.png',
+        'RPG': 'https://cdn-icons-png.flaticon.com/512/10069/10069327.png',
+        'Shooter': 'https://cdn-icons-png.flaticon.com/512/1030/1030305.png',
+        'Puzzle': 'https://cdn-icons-png.flaticon.com/512/3162/3162297.png',
+        'Sports': 'https://cdn-icons-png.flaticon.com/512/4163/4163679.png',
+        'Racing': 'https://cdn-icons-png.flaticon.com/512/4259/4259278.png',
+        'Fighting': 'https://cdn-icons-png.flaticon.com/512/2735/2735992.png',
+        'Simulation': 'https://cdn-icons-png.flaticon.com/512/12011/12011550.png',
+        'Strategy': 'https://cdn-icons-png.flaticon.com/512/3281/3281104.png',
+        'Platformer': 'https://cdn-icons-png.flaticon.com/512/7401/7401039.png'
+    }
 
-# Gêneros disponíveis no dataset da plataforma
-generos_disponiveis = [g for g in icones_generos if g in df_plataforma['Genre'].unique()]
-st.subheader("🎭 Selecione um gênero:")
+    generos_disponiveis = [g for g in icones_generos if g in df_plataforma['Genre'].unique()]
+    st.subheader("🎭 Selecione um gênero:")
 
-# Botões para seleção de gênero
-colunas_gen = st.columns(len(generos_disponiveis))
-for i, genero_nome in enumerate(generos_disponiveis):
-    with colunas_gen[i]:
-        if st.button(genero_nome, key=f"botao_genero_{genero_nome}"):
-            st.session_state.genero_selecionado = genero_nome
+    colunas_gen = st.columns(len(generos_disponiveis))
+    for i, genero_nome in enumerate(generos_disponiveis):
+        with colunas_gen[i]:
+            if st.button(genero_nome, key=f"botao_genero_{genero_nome}"):
+                st.session_state.genero_selecionado = genero_nome
 
-# Ícones com destaque para o gênero selecionado
-colunas_gen2 = st.columns(len(generos_disponiveis))
-for i, genero_nome in enumerate(generos_disponiveis):
-    with colunas_gen2[i]:
-        if st.session_state.genero_selecionado == genero_nome:
-            components.html(f"""
-                <style>
-                    @keyframes pulse {{
-                        0% {{ transform: scale(1); }}
-                        50% {{ transform: scale(1.15); }}
-                        100% {{ transform: scale(1); }}
-                    }}
-                    .pulse {{
-                        animation: pulse 1s infinite;
-                        width: 60px;
-                    }}
-                </style>
-                <div style="text-align:center;">
-                    <img src="{icones_generos[genero_nome]}" class="pulse">
-                    <p>{genero_nome}</p>
-                </div>
-            """, height=130)
-        else:
-            st.image(icones_generos[genero_nome], width=60, caption=genero_nome)
+    colunas_gen2 = st.columns(len(generos_disponiveis))
+    for i, genero_nome in enumerate(generos_disponiveis):
+        with colunas_gen2[i]:
+            if st.session_state.genero_selecionado == genero_nome:
+                components.html(f"""
+                    <style>
+                        @keyframes pulse {{
+                            0% {{ transform: scale(1); }}
+                            50% {{ transform: scale(1.15); }}
+                            100% {{ transform: scale(1); }}
+                        }}
+                        .pulse {{
+                            animation: pulse 1s infinite;
+                            width: 60px;
+                        }}
+                    </style>
+                    <div style="text-align:center;">
+                        <img src="{icones_generos[genero_nome]}" class="pulse">
+                        <p>{genero_nome}</p>
+                    </div>
+                """, height=130)
+            else:
+                st.image(icones_generos[genero_nome], width=60, caption=genero_nome)
 
-# Fim da seleção de gênero
-if not st.session_state.genero_selecionado:
-    st.stop()
+    if not st.session_state.genero_selecionado:
+        st.stop()
 
-genero = st.session_state.genero_selecionado
+    genero = st.session_state.genero_selecionado
+    df_filtrado = df_plataforma[df_plataforma['Genre'] == genero]
 
-# Filtra por gênero
-df_filtrado = df_plataforma[df_plataforma['Genre'] == genero]
+    st.subheader(f"📋 Jogos para {plataforma} no gênero '{genero}'")
+    st.table(df_filtrado[['Game Title']].drop_duplicates().reset_index(drop=True))
 
-# Exibe lista de jogos (sem duplicados, sem índice)
-st.subheader(f"📋 Jogos para {plataforma} no gênero '{genero}'")
-st.table(df_filtrado[['Game Title']].drop_duplicates().reset_index(drop=True))
+elif aba == "estatisticas":
+    st.title("📊 Estatísticas")
 
-# Detalhes
-st.subheader("🔍 Detalhes do Jogo Selecionado")
-titulos_filtrados = df_filtrado['Game Title'].drop_duplicates().unique()
+    # ==== GRÁFICO 1: Quantidade de Jogos por Plataforma ====
+    st.subheader("👥 Quantidade de Jogos por Plataforma")
 
-if len(titulos_filtrados) == 0:
-    st.warning("⚠️ Nenhum jogo encontrado com os filtros selecionados.")
-else:
-    jogo = st.selectbox("🎮 Selecione um jogo:", titulos_filtrados)
-    detalhes = df_filtrado[df_filtrado['Game Title'] == jogo].iloc[0]
+    if 'Min Number of Players' in df.columns:
+        df_jogos = df.dropna(subset=['Min Number of Players'])
+        contagem_jogos = df_jogos.groupby('Platform').size().reset_index(name='Quantidade')
+
+        fig1 = px.bar(
+            contagem_jogos,
+            x='Platform',
+            y='Quantidade',
+            color='Quantidade',
+            color_continuous_scale='blues',
+            title=None
+        )
+        fig1.update_layout(
+            xaxis_title="Plataforma",
+            yaxis_title="Quantidade de Jogos",
+            showlegend=False,
+            hovermode=False,
+            height=400,
+            template="simple_white"
+        )
+        fig1.update_traces(textposition="none")
+        st.plotly_chart(fig1, use_container_width=True)
+    else:
+        st.warning("❌ Coluna 'Min Number of Players' não encontrada.")
+
+    # ==== GRÁFICO 2: Evolução das Avaliações ao Longo do Tempo ====
+    st.subheader("📈 Evolução das Avaliações ao Longo do Tempo")
+
+    ano_col = next((col for col in df.columns if col.lower() in ['year', 'release year']), None)
+
+    if ano_col:
+        df_ano = df.dropna(subset=['User Rating', ano_col])
+        df_ano[ano_col] = df_ano[ano_col].astype(int)
+        media_ano = df_ano.groupby(ano_col)['User Rating'].mean().reset_index().sort_values(by=ano_col)
+
+        fig2 = px.line(
+            media_ano,
+            x=ano_col,
+            y='User Rating',
+            title=None,
+            markers=True
+        )
+        fig2.update_traces(mode='lines+markers', line_shape='spline')
+        fig2.update_layout(
+            xaxis_title="Ano de Lançamento",
+            yaxis_title="Média das Avaliações",
+            hovermode='x unified',
+            height=400,
+            template='simple_white'
+        )
+        st.plotly_chart(fig2, use_container_width=True)
+    else:
+        st.warning("❌ Coluna de ano ('Year' ou 'Release Year') não encontrada.")
+
+    # ==== GRÁFICO 3: Top 10 Jogos com Melhor Avaliação ====
+    st.subheader("🏆 Top 10 Jogos com Melhor Avaliação")
+
+    top10 = df[['Game Title', 'User Rating']].dropna().drop_duplicates()
+    top10 = top10.sort_values(by='User Rating', ascending=False).head(10)
+
+    fig3 = px.bar(
+        top10,
+        x='Game Title',
+        y='User Rating',
+        color='User Rating',
+        color_continuous_scale='reds'
+    )
+    fig3.update_traces(textposition='none')
+    fig3.update_layout(
+        xaxis_title="Jogo",
+        yaxis_title="Nota do Usuário",
+        showlegend=False,
+        height=400,
+        template="simple_white"
+    )
+    st.plotly_chart(fig3, use_container_width=True)
+
+    # ==== GRÁFICO 4: Modos de Jogo Disponíveis (Multiplayer ou Não) ====
+    st.subheader("🎮 Modos de Jogo Disponíveis")
+
+    modo_coluna = next((col for col in df.columns if col.lower() in ['game mode', 'mode', 'multiplayer']), None)
+
+    if modo_coluna:
+        df[modo_coluna] = df[modo_coluna].astype(str).str.strip().str.lower()
+        df['Modo de Jogo'] = df[modo_coluna].apply(
+            lambda x: 'Multiplayer' if x in ['yes', 'true', '1'] else 'Singleplayer'
+        )
+
+        modos_contagem = df['Tipo de Jogo'].value_counts().reset_index()
+        modos_contagem.columns = ['Modo de Jogo', 'Quantidade']
+
+        fig_modos = px.bar(
+            modos_contagem,
+            x='Modo de Jogo',
+            y='Quantidade',
+            color='Modo de Jogo',
+            color_discrete_map={'Multiplayer': '#2ecc71', 'Singleplayer': '#e74c3c'}
+        )
+        fig_modos.update_traces(marker_line_color='black', marker_line_width=1.2)
+        fig_modos.update_layout(
+            title="Distribuição de Jogos Multiplayer e Singleplayer",
+            xaxis_title="Tipo de Jogo",
+            yaxis_title="Número de Jogos",
+            showlegend=False,
+            height=400,
+            template="simple_white"
+        )
+        st.plotly_chart(fig_modos, use_container_width=True)
+    else:
+        st.warning("❌ Nenhuma coluna de modo de jogo encontrada no dataset.")
+
+
+
+
+
+
+
+
+# ============== SUGESTÕES PERSONALIZADAS =================
+elif aba == "recomendador":
+    st.title("🎯 Sugestões Personalizadas")
+
+    genero = st.selectbox("🎭 Gênero:", sorted(df['Genre'].dropna().unique()))
+    faixa_preco = st.slider("💰 Preço (USD):", float(df['Price'].min()), float(df['Price'].max()), (0.0, 60.0))
+    faixa_nota = st.slider("⭐ Avaliação:", float(df['User Rating'].min()), float(df['User Rating'].max()), (0.0, 5.0))
+
+    recomendados = df[
+        (df['Genre'] == genero) &
+        (df['Price'].between(*faixa_preco)) &
+        (df['User Rating'].between(*faixa_nota))
+    ][['Game Title', 'Platform', 'Price', 'User Rating']].drop_duplicates()
+
+    st.subheader("🎮 Jogos Recomendados")
+
+    if recomendados.empty:
+        st.warning("❌ Não foi possível encontrar jogos com os critérios selecionados.")
+    else:
+        st.dataframe(recomendados.reset_index(drop=True), use_container_width=True)
+
+# ================= BUSCADOR DE JOGOS =================
+elif aba == "buscar":
+    st.title("🔍 Buscador de Jogos")
+
+    jogo = st.selectbox("Digite ou selecione um jogo:", sorted(df['Game Title'].dropna().unique()))
+    dados = df[df['Game Title'] == jogo].iloc[0]
 
     st.markdown(f"""
-    **🎮 Título:** {detalhes['Game Title']}  
-    **🧬 Gênero:** {detalhes['Genre']}  
-    **⭐ Avaliação dos Usuários:** {detalhes['User Rating']}  
-    **💰 Preço:** {detalhes['Price']}  
-    **📝 Review:** {detalhes['User Review Text']}  
-    **🎮 Modo de Jogo:** {detalhes['Game Mode']}  
-    **👥 Número Mínimo de Jogadores:** {detalhes['Min Number of Players']}  
+    **📌 Título:** {dados['Game Title']}  
+    **⭐ Avaliação:** {dados['User Rating']}  
+    **🎭 Gênero:** {dados['Genre']}  
+    **💬 Review:** {dados['User Review Text']}  
+    **🎮 Modo de Jogo:** {dados['Game Mode']}  
+    **💰 Preço:** {dados['Price']}  
     """)
+
+if aba == "reviews":
+    st.title("💬 Análise de Reviews")
+
+    from streamlit.components.v1 import html
+
+    icones_generos = {
+        'Action': 'https://cdn-icons-png.flaticon.com/512/16391/16391182.png',
+        'Adventure': 'https://cdn-icons-png.flaticon.com/512/5064/5064012.png',
+        'RPG': 'https://cdn-icons-png.flaticon.com/512/10069/10069327.png',
+        'Shooter': 'https://cdn-icons-png.flaticon.com/512/1030/1030305.png',
+        'Puzzle': 'https://cdn-icons-png.flaticon.com/512/3162/3162297.png',
+        'Sports': 'https://cdn-icons-png.flaticon.com/512/4163/4163679.png',
+        'Racing': 'https://cdn-icons-png.flaticon.com/512/4259/4259278.png',
+        'Fighting': 'https://cdn-icons-png.flaticon.com/512/2735/2735992.png',
+        'Simulation': 'https://cdn-icons-png.flaticon.com/512/12011/12011550.png',
+        'Strategy': 'https://cdn-icons-png.flaticon.com/512/3281/3281104.png',
+        'Platformer': 'https://cdn-icons-png.flaticon.com/512/7401/7401039.png'
+    }
+
+    generos_disponiveis = [g for g in icones_generos if g in df['Genre'].unique()]
+    st.subheader("🎭 Selecione um gênero:")
+
+    colunas_gen = st.columns(len(generos_disponiveis))
+    for i, genero_nome in enumerate(generos_disponiveis):
+        with colunas_gen[i]:
+            if st.button(genero_nome, key=f"btn_review_genero_{genero_nome}"):
+                st.session_state.genero_review = genero_nome
+
+    if "genero_review" not in st.session_state:
+        st.stop()
+
+    genero_escolhido = st.session_state.genero_review
+
+    colunas_gen2 = st.columns(len(generos_disponiveis))
+    for i, genero_nome in enumerate(generos_disponiveis):
+        with colunas_gen2[i]:
+            if genero_nome == genero_escolhido:
+                components.html(f"""
+                    <style>
+                        @keyframes pulse {{
+                            0% {{ transform: scale(1); }}
+                            50% {{ transform: scale(1.15); }}
+                            100% {{ transform: scale(1); }}
+                        }}
+                        .pulse {{
+                            animation: pulse 1s infinite;
+                            width: 60px;
+                        }}
+                    </style>
+                    <div style="text-align:center;">
+                        <img src="{icones_generos[genero_nome]}" class="pulse">
+                        <p><b>{genero_nome}</b></p>
+                    </div>
+                """, height=130)
+            else:
+                st.image(icones_generos[genero_nome], width=60, caption=genero_nome)
+
+    df_gen = df[(df['Genre'] == genero_escolhido) & df['User Review Text'].notna()]
+
+    if df_gen.empty:
+        st.warning("❌ Nenhuma review disponível para este gênero.")
+    else:
+        st.subheader("☁️ Nuvem de Palavras")
+        texto = " ".join(df_gen['User Review Text'].astype(str))
+        wordcloud = WordCloud(width=800, height=300, background_color='white').generate(texto)
+        fig, ax = plt.subplots(figsize=(10, 4))
+        ax.imshow(wordcloud, interpolation='bilinear')
+        ax.axis("off")
+        st.pyplot(fig)
+
+        # ========== REVIEWS POSITIVAS ==========
+        st.subheader("💚 Reviews mais positivas")
+        top_reviews = df_gen.sort_values(by='User Rating', ascending=False).head(5)
+
+        for _, row in top_reviews.iterrows():
+            jogo = row['Game Title']
+            review = row['User Review Text'][:150] + "..." if len(row['User Review Text']) > 150 else row['User Review Text']
+            nota = round(row['User Rating'])
+
+            html(f"""
+            <style>
+                .card {{
+                    background: #e9fbe5;
+                    border-radius: 12px;
+                    padding: 15px;
+                    margin-bottom: 15px;
+                    transition: all 0.3s ease;
+                    box-shadow: 2px 2px 8px rgba(0,0,0,0.1);
+                }}
+                .card:hover {{
+                    background: #d3f5c6;
+                    transform: scale(1.02);
+                }}
+                .stars span {{
+                    font-size: 24px;
+                    color: gray;
+                    transition: color 0.3s ease;
+                }}
+                .card:hover .stars span:nth-child(-n+{nota}) {{
+                    color: gold;
+                }}
+                .emoji {{
+                    font-size: 24px;
+                    margin-left: 10px;
+                }}
+            </style>
+            <div class="card">
+                <b>{jogo}</b><br>
+                {review}
+                <div class="stars" style="margin-top: 10px;">
+                    {''.join(['<span>★</span>' for _ in range(5)])}
+                    <span class="emoji">{'😊' if nota >= 4 else '😐'}</span>
+                </div>
+            </div>
+            """, height=140)
+        st.subheader("💔 Reviews mais negativas")
+        bottom_reviews = df_gen.sort_values(by='User Rating', ascending=True).head(5)
+
+        for _, row in bottom_reviews.iterrows():
+            jogo = row['Game Title']
+            review = row['User Review Text'][:150] + "..." if len(row['User Review Text']) > 150 else row['User Review Text']
+            nota = round(row['User Rating'])
+
+            html(f"""
+            <style>
+                .card {{
+                    background: #fde5e5;
+                    border-radius: 12px;
+                    padding: 15px;
+                    margin-bottom: 15px;
+                    transition: background 0.3s ease, transform 0.3s ease;
+                    box-shadow: 2px 2px 8px rgba(0,0,0,0.1);
+                }}
+                .card:hover {{
+                    background: #f8cccc;
+                    transform: scale(1.02);
+                }}
+                .stars span {{
+                    font-size: 24px;
+                    transition: color 0.3s ease;
+                }}
+                .stars .dourado {{
+                    color: gold;
+                }}
+                .stars .cinza {{
+                    color: gray;
+                }}
+                .emoji {{
+                    font-size: 24px;
+                    margin-left: 10px;
+                }}
+            </style>
+
+            <div class="card">
+                <b>{jogo}</b><br>
+                {review}
+                <div class="stars" style="margin-top: 10px;">
+                    {''.join([f'<span class="dourado">★</span>' if i < nota else '<span class="cinza">★</span>' for i in range(5)])}
+                    <span class="emoji">{'😞' if nota < 2.5 else '😐'}</span>
+                </div>
+            </div>
+            """, height=140)
+
+
+
+elif aba == "sobre":
+    st.markdown("""
+        <style>
+            .brilho {
+                font-size: 36px;
+                font-weight: bold;
+                background: linear-gradient(90deg, #007cf0, #00dfd8, #007cf0);
+                background-size: 300%;
+                -webkit-background-clip: text;
+                -webkit-text-fill-color: transparent;
+                animation: brilho 4s ease-in-out infinite;
+                text-align: center;
+            }
+
+            @keyframes brilho {
+                0% { background-position: 0% }
+                50% { background-position: 100% }
+                100% { background-position: 0% }
+            }
+
+            .caixa {
+                background-color: #f0f8ff;
+                padding: 20px;
+                border-radius: 12px;
+                margin-bottom: 20px;
+                box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+                transition: transform 0.3s ease, background 0.3s ease;
+            }
+
+            .caixa:hover {
+                transform: scale(1.02);
+                background-color: #e6f7ff;
+            }
+
+            hr.animado {
+                height: 4px;
+                border: none;
+                background: linear-gradient(to right, #00dfd8, #007cf0);
+                animation: desliza 3s infinite linear;
+                background-size: 200% auto;
+            }
+
+            @keyframes desliza {
+                0% { background-position: 0% }
+                100% { background-position: 200% }
+            }
+        </style>
+
+        <div class="brilho">📘 Sobre o Projeto</div>
+        <br>
+
+        <div class="caixa">
+            <h4>🔍 Origem e Detalhes do Conjunto de Dados</h4>
+            <p>
+                Os dados vêm do repositório <b>Kaggle</b>: 
+                <a href="https://www.kaggle.com/datasets/jahnavipaliwal/video-game-reviews-and-ratings" target="_blank">
+                    Video Game Reviews and Ratings
+                </a>.
+            </p>
+            <p>
+                O conjunto inclui avaliações reais para centenas de jogos, com informações como:
+                <ul>
+                    <li>🎮 Nome do jogo</li>
+                    <li>🕹️ Plataforma (PC, Xbox, PlayStation...)</li>
+                    <li>📂 Gênero (RPG, Ação, Puzzle...)</li>
+                    <li>⭐ Nota média dos usuários</li>
+                    <li>✍️ Reviews textuais</li>
+                </ul>
+            </p>
+        </div>
+
+        <hr class="animado">
+
+        <div class="caixa">
+            <h4>🎯 Objetivos do Projeto</h4>
+            <ul>
+                <li>Exploração interativa dos jogos</li>
+                <li>Recomendações personalizadas</li>
+                <li>Visualização de estatísticas e padrões</li>
+                <li>Análise de sentimentos e nuvem de palavras</li>
+            </ul>
+        </div>
+
+        <hr class="animado">
+
+        <div class="caixa">
+            <h4>🛠️ Tecnologias Utilizadas</h4>
+            <ul>
+                <li><b>Streamlit</b> — Interface web</li>
+                <li><b>Pandas</b> — Manipulação de dados</li>
+                <li><b>Plotly</b> — Gráficos interativos</li>
+                <li><b>WordCloud</b> — Visualização textual</li>
+                <li><i>Opcional:</i> TextBlob/VADER — Sentimentos</li>
+            </ul>
+        </div>
+
+        <hr class="animado">
+
+        <div class="caixa">
+            <h4>👤 Créditos</h4>
+            <p>Projeto desenvolvido por <b>você</b> 😄<br>
+            Com o poder de ferramentas open-source e da comunidade de dados.</p>
+        </div>
+    """, unsafe_allow_html=True)
