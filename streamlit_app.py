@@ -92,14 +92,39 @@ icones_generos = {
 generos_disponiveis = [g for g in icones_generos if g in df_plataforma['Genre'].unique()]
 st.subheader("🎭 Selecione um gênero:")
 
+# Botões para seleção de gênero
 colunas_gen = st.columns(len(generos_disponiveis))
 for i, genero_nome in enumerate(generos_disponiveis):
     with colunas_gen[i]:
         if st.button(genero_nome, key=f"botao_genero_{genero_nome}"):
             st.session_state.genero_selecionado = genero_nome
-        st.image(icones_generos[genero_nome], width=50)
 
-# Validação
+# Ícones com destaque para o gênero selecionado
+colunas_gen2 = st.columns(len(generos_disponiveis))
+for i, genero_nome in enumerate(generos_disponiveis):
+    with colunas_gen2[i]:
+        if st.session_state.genero_selecionado == genero_nome:
+            components.html(f"""
+                <style>
+                    @keyframes pulse {{
+                        0% {{ transform: scale(1); }}
+                        50% {{ transform: scale(1.15); }}
+                        100% {{ transform: scale(1); }}
+                    }}
+                    .pulse {{
+                        animation: pulse 1s infinite;
+                        width: 60px;
+                    }}
+                </style>
+                <div style="text-align:center;">
+                    <img src="{icones_generos[genero_nome]}" class="pulse">
+                    <p>{genero_nome}</p>
+                </div>
+            """, height=130)
+        else:
+            st.image(icones_generos[genero_nome], width=60, caption=genero_nome)
+
+# Fim da seleção de gênero
 if not st.session_state.genero_selecionado:
     st.stop()
 
