@@ -346,7 +346,7 @@ elif aba == "buscar":
     """)
 
 
-#
+
 if aba == "reviews":
     st.title(" Análise de Reviews")
 
@@ -409,7 +409,7 @@ if aba == "reviews":
     if df_gen.empty:
         st.warning(" Nenhuma review disponível para este gênero.")
     else:
-        st.subheader("☁️ Nuvem de Palavras")
+        st.subheader(" Nuvem de Palavras")
         texto = " ".join(df_gen['User Review Text'].astype(str))
         wordcloud = WordCloud(width=800, height=300, background_color='white').generate(texto)
         fig, ax = plt.subplots(figsize=(10, 4))
@@ -424,7 +424,16 @@ if aba == "reviews":
         for _, row in top_reviews.iterrows():
             jogo = row['Game Title']
             review = row['User Review Text'][:150] + "..." if len(row['User Review Text']) > 150 else row['User Review Text']
-            nota = round(row['User Rating'])
+            nota_real = round(row['User Rating'], 1)
+            estrelas_qtd = round(nota_real / 20, 2)
+            inteiras = int(estrelas_qtd)
+            meia = 0.5 if estrelas_qtd - inteiras >= 0.25 and estrelas_qtd - inteiras < 0.75 else 0
+            vazias = 5 - inteiras - (1 if meia else 0)
+            estrelas_html = (
+                '<span class="dourado">★</span>' * inteiras +
+                ('<span class="dourado" style="opacity:0.5;">★</span>' if meia else '') +
+                '<span class="cinza">★</span>' * vazias
+            )
 
             html(f"""
             <style>
@@ -442,11 +451,13 @@ if aba == "reviews":
                 }}
                 .stars span {{
                     font-size: 24px;
-                    color: gray;
                     transition: color 0.3s ease;
                 }}
-                .card:hover .stars span:nth-child(-n+{nota}) {{
+                .stars .dourado {{
                     color: gold;
+                }}
+                .stars .cinza {{
+                    color: gray;
                 }}
                 .emoji {{
                     font-size: 24px;
@@ -454,21 +465,31 @@ if aba == "reviews":
                 }}
             </style>
             <div class="card">
-                <b>{jogo}</b><br>
+                <b>{jogo} </b><br>
                 {review}
                 <div class="stars" style="margin-top: 10px;">
-                    {''.join(['<span>★</span>' for _ in range(5)])}
-                    <span class="emoji">{'😊' if nota >= 4 else '😐'}</span>
+                    {estrelas_html} <span class="emoji">{'😊' if nota_real >= 80 else '😐'}</span>
                 </div>
             </div>
-            """, height=140)
+            """, height=150)
+
+        # ========== REVIEWS NEGATIVAS ==========
         st.subheader("💔 Reviews mais negativas")
         bottom_reviews = df_gen.sort_values(by='User Rating', ascending=True).head(5)
 
         for _, row in bottom_reviews.iterrows():
             jogo = row['Game Title']
             review = row['User Review Text'][:150] + "..." if len(row['User Review Text']) > 150 else row['User Review Text']
-            nota = round(row['User Rating'])
+            nota_real = round(row['User Rating'], 1)
+            estrelas_qtd = round(nota_real / 20, 2)
+            inteiras = int(estrelas_qtd)
+            meia = 0.5 if estrelas_qtd - inteiras >= 0.25 and estrelas_qtd - inteiras < 0.75 else 0
+            vazias = 5 - inteiras - (1 if meia else 0)
+            estrelas_html = (
+                '<span class="dourado">★</span>' * inteiras +
+                ('<span class="dourado" style="opacity:0.5;">★</span>' if meia else '') +
+                '<span class="cinza">★</span>' * vazias
+            )
 
             html(f"""
             <style>
@@ -499,16 +520,19 @@ if aba == "reviews":
                     margin-left: 10px;
                 }}
             </style>
-
             <div class="card">
-                <b>{jogo}</b><br>
+                <b>{jogo} </b><br>
                 {review}
                 <div class="stars" style="margin-top: 10px;">
-                    {''.join([f'<span class="dourado">★</span>' if i < nota else '<span class="cinza">★</span>' for i in range(5)])}
-                    <span class="emoji">{'😞' if nota < 2.5 else '😐'}</span>
+                    {estrelas_html} <span class="emoji">{'😞' if nota_real < 25 else '😐'}</span>
                 </div>
             </div>
-            """, height=140)
+            """, height=150)
+
+
+
+
+
 
 
 
