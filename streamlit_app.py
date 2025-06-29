@@ -241,7 +241,7 @@ elif aba == "estatisticas":
             lambda x: 'Multiplayer' if x in ['yes', 'true', '1'] else 'Singleplayer'
         )
 
-        modos_contagem = df['Tipo de Jogo'].value_counts().reset_index()
+        modos_contagem = df['Modo de Jogo'].value_counts().reset_index()
         modos_contagem.columns = ['Modo de Jogo', 'Quantidade']
 
         fig_modos = px.bar(
@@ -254,7 +254,7 @@ elif aba == "estatisticas":
         fig_modos.update_traces(marker_line_color='black', marker_line_width=1.2)
         fig_modos.update_layout(
             title="Distribuição de Jogos Multiplayer e Singleplayer",
-            xaxis_title="Tipo de Jogo",
+            xaxis_title="Modo de Jogo",
             yaxis_title="Número de Jogos",
             showlegend=False,
             height=400,
@@ -263,7 +263,6 @@ elif aba == "estatisticas":
         st.plotly_chart(fig_modos, use_container_width=True)
     else:
         st.warning("❌ Nenhuma coluna de modo de jogo encontrada no dataset.")
-
 
 
 
@@ -296,18 +295,22 @@ elif aba == "recomendador":
 elif aba == "buscar":
     st.title("🔍 Buscador de Jogos")
 
+    # Seleção do jogo
     jogo = st.selectbox("Digite ou selecione um jogo:", sorted(df['Game Title'].dropna().unique()))
     dados = df[df['Game Title'] == jogo].iloc[0]
 
+    # Exibe apenas as informações do jogo (sem imagem)
     st.markdown(f"""
     **📌 Título:** {dados['Game Title']}  
     **⭐ Avaliação:** {dados['User Rating']}  
     **🎭 Gênero:** {dados['Genre']}  
     **💬 Review:** {dados['User Review Text']}  
     **🎮 Modo de Jogo:** {dados['Game Mode']}  
-    **💰 Preço:** {dados['Price']}  
+    **💰 Preço:** R$ {dados['Price']:.2f}  
     """)
 
+
+#
 if aba == "reviews":
     st.title("💬 Análise de Reviews")
 
@@ -569,11 +572,164 @@ elif aba == "sobre":
             </ul>
         </div>
 
-        <hr class="animado">
-
-        <div class="caixa">
-            <h4>👤 Créditos</h4>
-            <p>Projeto desenvolvido por <b>você</b> 😄<br>
-            Com o poder de ferramentas open-source e da comunidade de dados.</p>
-        </div>
+        
     """, unsafe_allow_html=True)
+    components.html('''
+<div id="pacman-canvas-container">
+  <canvas id="pacmanCanvas" width="300" height="300"></canvas>
+</div>
+<style>
+  #pacman-canvas-container {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    width: 300px;
+    height: 300px;
+    z-index: 1;
+    background: black;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 0 20px rgba(255,255,0,0.4);
+  }
+  canvas {
+    display: block;
+  }
+</style>
+<script>
+const canvas = document.getElementById("pacmanCanvas");
+const ctx = canvas.getContext("2d");
+
+const pacman = {
+  x: 30,
+  y: 30,
+  radius: 15,
+  speed: 2,
+  dirX: 1,
+  dirY: 1
+};
+
+const ghosts = [
+  { x: 250, y: 50, color: "red", dirX: -1, dirY: 0 },
+  { x: 50, y: 250, color: "cyan", dirX: 1, dirY: -1 },
+  { x: 250, y: 250, color: "pink", dirX: -1, dirY: -1 },
+  { x: 50, y: 50, color: "orange", dirX: 0, dirY: 1 }
+];
+
+let dots = [];
+for (let i = 20; i < 280; i += 40) {
+  for (let j = 20; j < 280; j += 40) {
+    dots.push({ x: i, y: j, eaten: false });
+  }
+}
+
+function drawPacman() {
+  const angle = 0.3;
+  ctx.beginPath();
+  const angleOpen = Math.PI * angle;
+  const direction = Math.atan2(pacman.dirY, pacman.dirX);
+  ctx.moveTo(pacman.x, pacman.y);
+  ctx.arc(
+    pacman.x,
+    pacman.y,
+    pacman.radius,
+    direction + angleOpen,
+    direction - angleOpen,
+    false
+  );
+  ctx.closePath();
+  ctx.fillStyle = "yellow";
+  ctx.fill();
+}
+
+function drawGhost(g) {
+  const x = g.x;
+  const y = g.y;
+  const r = 14;
+  const footCount = 4;
+  const footWidth = r / footCount;
+
+  ctx.beginPath();
+  ctx.arc(x, y, r, Math.PI, 0, false);
+  ctx.lineTo(x + r, y + r);
+  for (let i = 0; i < footCount; i++) {
+    ctx.arc(
+      x + r - (i * footWidth * 2 + footWidth / 2),
+      y + r,
+      footWidth / 2,
+      0,
+      Math.PI,
+      true
+    );
+  }
+  ctx.lineTo(x - r, y + r);
+  ctx.closePath();
+  ctx.fillStyle = g.color;
+  ctx.fill();
+
+  // olhos
+  ctx.beginPath();
+  ctx.fillStyle = "white";
+  ctx.arc(x - 5, y - 5, 4, 0, 2 * Math.PI);
+  ctx.arc(x + 5, y - 5, 4, 0, 2 * Math.PI);
+  ctx.fill();
+
+  ctx.beginPath();
+  ctx.fillStyle = "blue";
+  ctx.arc(x - 5, y - 5, 2, 0, 2 * Math.PI);
+  ctx.arc(x + 5, y - 5, 2, 0, 2 * Math.PI);
+  ctx.fill();
+}
+
+function drawDots() {
+  ctx.fillStyle = "white";
+  for (let d of dots) {
+    if (!d.eaten) {
+      ctx.beginPath();
+      ctx.arc(d.x, d.y, 3, 0, 2 * Math.PI);
+      ctx.fill();
+    }
+  }
+}
+
+function updatePacman() {
+  pacman.x += pacman.speed * pacman.dirX;
+  pacman.y += pacman.speed * pacman.dirY;
+
+  if (pacman.x > canvas.width - pacman.radius || pacman.x < pacman.radius) {
+    pacman.dirX *= -1;
+  }
+  if (pacman.y > canvas.height - pacman.radius || pacman.y < pacman.radius) {
+    pacman.dirY *= -1;
+  }
+
+  for (let d of dots) {
+    const dx = pacman.x - d.x;
+    const dy = pacman.y - d.y;
+    if (!d.eaten && Math.sqrt(dx * dx + dy * dy) < pacman.radius) {
+      d.eaten = true;
+    }
+  }
+}
+
+function updateGhosts() {
+  for (let g of ghosts) {
+    g.x += g.dirX * 1.5;
+    g.y += g.dirY * 1.5;
+    if (g.x < 10 || g.x > 290) g.dirX *= -1;
+    if (g.y < 10 || g.y > 290) g.dirY *= -1;
+  }
+}
+
+function animate() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  drawDots();
+  drawPacman();
+  ghosts.forEach(drawGhost);
+  updatePacman();
+  updateGhosts();
+  requestAnimationFrame(animate);
+}
+
+animate();
+</script>
+''', height=360)
