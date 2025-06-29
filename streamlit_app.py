@@ -4,7 +4,10 @@ import plotly.express as px
 import matplotlib.pyplot as plt
 from wordcloud import WordCloud
 import streamlit.components.v1 as components
-
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.preprocessing import OneHotEncoder, StandardScaler
+from sklearn.compose import ColumnTransformer
+from sklearn.pipeline import Pipeline
 # Configuração da página
 st.set_page_config(page_title="Reviews de Jogos", layout="wide")
 
@@ -51,6 +54,8 @@ abas = {
     "🎯 Sugestões Personalizadas": "recomendador",
     "🔍 Buscador de Jogos": "buscar",
     "💬 Análise de Reviews": "reviews",
+    "📂 Pré-processamento ": "Pré-processamento",
+   "🧠 Modelo de ML": "modelo",
     "📘 Sobre": "sobre"
 }
 
@@ -587,7 +592,356 @@ if aba == "reviews":
                 </div>
             </div>
             """, height=150)
+########
+elif aba == "Pré-processamento":
+    st.title("Pré-processamento dos Dados")
 
+    # Carregamento do dataset
+    try:
+        dados = pd.read_csv("video_game_reviews.csv")
+    except FileNotFoundError:
+        st.error("Arquivo de dados não encontrado. Verifique o nome ou caminho.")
+        st.stop()
+
+    # Explicação do Problema
+    st.markdown("### Explicação do Problema")
+    st.markdown("""
+    O projeto busca prever se um jogo possui modo multiplayer com base em variáveis conhecidas previamente. 
+    Essa previsão pode ser útil, por exemplo, para desenvolvedores que desejam estimar características de engajamento do jogo ou para consumidores em sistemas de recomendação.
+
+    A variável alvo é `Multiplayer`, com valores possíveis: Yes ou No — ou seja, trata-se de uma tarefa de classificação binária.
+    """)
+
+    # Etapas do Pré-processamento
+    st.markdown("### Etapas de Pré-processamento")
+
+    st.markdown("#### 1. Leitura e Análise Inicial")
+    st.markdown("""
+    O conjunto de dados foi carregado a partir do Kaggle. Para compreender a estrutura e identificar possíveis problemas, 
+    realizou-se uma análise exploratória com ferramentas como `pandas_profiling` e inspeção de tipos e consistência das variáveis.
+    
+    Justificativa: essa etapa inicial é fundamental para entender a qualidade dos dados e direcionar os tratamentos posteriores.
+    """)
+
+    # === 2. Criação de Novas Variáveis ===
+    st.markdown("#### 2. Criação de Novas Variáveis")
+    st.markdown("""
+    Foram criadas variáveis auxiliares para capturar informações latentes que podem ajudar na classificação:
+
+    - `Game_Length_Category`: categoriza o tempo de jogo (`Game Length (Hours)`) em Curta, Média ou Longa.
+    - `Multiplayer_bin`: conversão da variável alvo para valores numéricos (1 para Yes, 0 para No).
+    - `Is_Online`: identifica se o modo principal é online.
+    - `Faixa_Preco`: agrupa os jogos em faixas de preço (Baixo, Médio e Alto).
+
+    Justificativa: essas variáveis criam segmentações úteis e padronizadas que facilitam a aprendizagem dos modelos.
+    """)
+
+    import numpy as np
+    if 'Game Length (Hours)' in dados.columns:
+        dados['Game_Length_Category'] = pd.cut(
+            dados['Game Length (Hours)'],
+            bins=[0, 10, 30, 1000],
+            labels=['Curta', 'Média', 'Longa']
+        )
+    dados['Multiplayer_bin'] = (dados['Multiplayer'].str.strip().str.lower() == 'yes').astype(int)
+    dados['Is_Online'] = (dados['Game Mode'].str.strip().str.lower() == 'online').astype(int)
+    if 'Price' in dados.columns:
+        dados['Faixa_Preco'] = pd.cut(
+            dados['Price'],
+            bins=[-np.inf, 20, 50, np.inf],
+            labels=['Baixo', 'Médio', 'Alto']
+        )
+
+    # === 3. Transformações Numéricas ===
+    st.markdown("#### 3. Transformações Numéricas")
+    st.markdown("""
+    As variáveis numéricas `User Rating`, `Price` e `Game Length (Hours)` foram padronizadas com `StandardScaler`.
+
+    Justificativa: a padronização é necessária para evitar que variáveis com escalas muito diferentes influenciem desproporcionalmente os modelos.
+    """)
+
+    from sklearn.preprocessing import StandardScaler
+    import seaborn as sns  # <- Importação adicionada
+    variaveis_continuas = ['User Rating', 'Price', 'Game Length (Hours)']
+    for var in variaveis_continuas:
+        if var in dados.columns:
+            dados[var] = StandardScaler().fit_transform(dados[[var]])
+
+    st.markdown("Distribuição Após Padronização")
+    for var in variaveis_continuas:
+        if var in dados.columns:
+            fig, ax = plt.subplots(figsize=(7, 3))
+            sns.histplot(dados[var], kde=True, ax=ax, color='orange')
+            ax.set_title(f"{var} - Após Padronização")
+            st.pyplot(fig)
+
+    # === 4. Codificação de Categóricas ===
+    st.markdown("#### 4. Codificação de Variáveis Categóricas")
+    st.markdown("""
+    Variáveis como `Genre`, `Platform`, `Game Mode` e `Age Group Targeted` foram codificadas via One-Hot Encoding.
+
+    Justificativa: algoritmos de machine learning não conseguem processar texto diretamente. O One-Hot Encoding converte categorias em colunas binárias.
+    """)
+
+    st.markdown("Distribuição dos Gêneros Mais Frequentes")
+    import plotly.express as px
+    if 'Genre' in dados.columns:
+        genero_plot = dados['Genre'].value_counts().reset_index()
+        genero_plot.columns = ['Genre', 'Count']
+        fig = px.bar(genero_plot.head(10), x='Genre', y='Count', title='Top 10 Gêneros de Jogos')
+        st.plotly_chart(fig, use_container_width=True)
+
+    # === 5. Mapeamento de Qualidade ===
+    st.markdown("#### 5. Mapeamento de Qualidade")
+    st.markdown("""
+    Variáveis subjetivas como `Graphics Quality`, `Soundtrack Quality` e `Story Quality` foram convertidas para uma escala ordinal de 1 (pior) a 5 (melhor):
+
+    - Poor → 1  
+    - Average → 2  
+    - Medium → 3  
+    - Good → 4  
+    - Excellent → 5
+
+    Justificativa: com a conversão ordinal, os modelos conseguem compreender a ordem de qualidade, permitindo inferências mais precisas.
+    """)
+
+    mapa_qualidade = {'Poor': 1, 'Average': 2, 'Medium': 3, 'Good': 4, 'Excellent': 5}
+    for col in ['Graphics Quality', 'Soundtrack Quality', 'Story Quality']:
+        if col in dados.columns:
+            dados[col] = dados[col].map(mapa_qualidade)
+
+    if 'Graphics Quality' in dados.columns:
+        st.markdown("Relação entre Qualidade Gráfica e Avaliação do Usuário")
+        fig = px.box(dados, x="Graphics Quality", y="User Rating", title="User Rating por Qualidade Gráfica")
+        st.plotly_chart(fig, use_container_width=True)
+
+####
+elif aba == "modelo":
+    st.title("Modelo de Machine Learning")
+
+    # ======== 1. Explicação do Problema =========
+    st.markdown("## Explicação do Problema de Machine Learning")
+    st.markdown("""
+    Este projeto tem como objetivo prever se um jogo possui ou não **modo multiplayer**, com base em informações como:
+    - Gênero (`Genre`)
+    - Plataforma (`Platform`)
+    - Preço (`Price`)
+
+    A variável-alvo é `Multiplayer`, com respostas categóricas: "Yes" ou "No".  
+    Assim, trata-se de um **problema de classificação binária**, em que o modelo aprenderá a identificar padrões que indiquem a presença ou ausência do modo multiplayer.
+    """)
+
+    # ======== 2. Sobre o Conjunto de Dados =========
+    st.markdown("## Conjunto de Dados Utilizado")
+    st.markdown("""
+    Utiliza-se um subconjunto limpo e pré-processado do dataset original proveniente do Kaggle, contendo:
+    - Jogos com valores válidos em `Genre`, `Platform`, `Price` e `Multiplayer`.
+    - Conversão da variável `Multiplayer` para formato binário (`Multiplayer_bin`), com 1 representando "Yes" e 0 representando "No".
+    """)
+
+    # ======== 3. Importações e Normalização =========
+    import pandas as pd
+    from sklearn.ensemble import RandomForestClassifier
+    from sklearn.preprocessing import OneHotEncoder, StandardScaler
+    from sklearn.compose import ColumnTransformer
+    from sklearn.pipeline import Pipeline
+    import streamlit.components.v1 as components
+
+    df.columns = df.columns.str.strip().str.title().str.replace(" ", "")
+
+    colunas_necessarias = ['Genre', 'Platform', 'Price', 'Multiplayer']
+    if df.empty or any(col not in df.columns for col in colunas_necessarias):
+        st.warning("O conjunto de dados está incompleto ou não carregado.")
+    else:
+        # ======== 4. Preparação dos Dados =========
+        @st.cache_data
+        def preparar_dados(df):
+            dados = df[['Genre', 'Platform', 'Price', 'Multiplayer']].dropna()
+            dados = dados[dados['Multiplayer'].str.lower().isin(['yes', 'no'])].copy()
+            dados['Multiplayer_bin'] = dados['Multiplayer'].str.lower().map({'yes': 1, 'no': 0})
+            return dados
+
+        @st.cache_resource
+        def treinar_modelo(dados):
+            X = dados[['Genre', 'Platform', 'Price']]
+            y = dados['Multiplayer_bin']
+
+            preproc = ColumnTransformer([
+                ('cat', OneHotEncoder(handle_unknown='ignore'), ['Genre', 'Platform']),
+                ('num', StandardScaler(), ['Price'])
+            ])
+
+            modelo = Pipeline([
+                ('prep', preproc),
+                ('clf', RandomForestClassifier(n_estimators=100, random_state=42))
+            ])
+
+            modelo.fit(X, y)
+            return modelo
+
+        dados = preparar_dados(df)
+        modelo = treinar_modelo(dados)
+
+        # ======== 5. Justificativa do Modelo =========
+        st.markdown("## Justificativa da Escolha do Modelo")
+        st.markdown("""
+        O algoritmo escolhido foi o **Random Forest Classifier** pelas seguintes razões:
+        - É eficiente para tarefas de classificação com variáveis categóricas e numéricas.
+        - Não exige normalidade nos dados e é robusto contra overfitting.
+        - Capta relações não lineares e interações entre variáveis de forma automática.
+        - É interpretável e tem boa performance em problemas tabulares como este.
+        """)
+
+        # ======== 6. HTML – Multiplayer com Tetris ========
+        multiplayer_html = '''
+        <div id="multiplayer-canvas-container">
+          <canvas id="multiplayerCanvas" width="320" height="250"></canvas>
+        </div>
+        <style>
+          #multiplayer-canvas-container {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: #1a1a1a;
+            border-radius: 12px;
+            box-shadow: 0 0 20px rgba(0,255,0,0.4);
+            z-index: 9999;
+          }
+        </style>
+        <script>
+        const canvas = document.getElementById("multiplayerCanvas");
+        const ctx = canvas.getContext("2d");
+        let tetrisY = 0;
+
+        function drawConsole() {
+          ctx.fillStyle = "#0ff";
+          ctx.fillRect(110, 30, 100, 60);
+          ctx.fillStyle = "#000";
+          ctx.fillRect(120, 40, 80, 40);
+
+          // Tetris
+          ctx.fillStyle = "#0f0"; ctx.fillRect(130, 40 + tetrisY % 40, 10, 10);
+          ctx.fillStyle = "#f00"; ctx.fillRect(150, 40 + (tetrisY + 10) % 40, 10, 10);
+          ctx.fillStyle = "#00f"; ctx.fillRect(170, 40 + (tetrisY + 20) % 40, 10, 10);
+
+          ctx.fillStyle = "#0ff";
+          ctx.fillRect(140, 100, 40, 5);
+        }
+
+        function drawController(x, y) {
+          ctx.fillStyle = "gray";
+          ctx.beginPath();
+          ctx.roundRect(x, y, 90, 40, 8); ctx.fill();
+          ctx.strokeStyle = "white";
+          ctx.beginPath();
+          ctx.moveTo(x + 45, y); ctx.bezierCurveTo(x + 45, y - 20, x + 25, y - 25, x + 35, y - 40); ctx.stroke();
+          ctx.fillStyle = "black";
+          ctx.beginPath(); ctx.arc(x + 15, y + 20, 5, 0, 2*Math.PI); ctx.fill();
+          ctx.beginPath(); ctx.arc(x + 70, y + 12, 4, 0, 2*Math.PI); ctx.fill();
+          ctx.beginPath(); ctx.arc(x + 80, y + 22, 4, 0, 2*Math.PI); ctx.fill();
+          ctx.beginPath(); ctx.arc(x + 70, y + 32, 4, 0, 2*Math.PI); ctx.fill();
+          ctx.beginPath(); ctx.arc(x + 60, y + 22, 4, 0, 2*Math.PI); ctx.fill();
+        }
+
+        function animate() {
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
+          drawConsole();
+          drawController(50 + Math.sin(Date.now()/300)*4, 160);
+          drawController(170 - Math.sin(Date.now()/300)*4, 160);
+          tetrisY += 1;
+          if (tetrisY > 40) tetrisY = 0;
+          requestAnimationFrame(animate);
+        }
+        animate();
+        </script>
+        '''
+
+        # ======== 7. HTML – Singleplayer com Tetris ========
+        singleplayer_html = '''
+        <div id="singleplayer-canvas-container">
+          <canvas id="singleCanvas" width="320" height="250"></canvas>
+        </div>
+        <style>
+          #singleplayer-canvas-container {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: #1a1a1a;
+            border-radius: 12px;
+            box-shadow: 0 0 20px rgba(255,255,0,0.4);
+            z-index: 9999;
+          }
+        </style>
+        <script>
+        const canvas = document.getElementById("singleCanvas");
+        const ctx = canvas.getContext("2d");
+        let tetrisY = 0;
+
+        function drawConsole() {
+          ctx.fillStyle = "#ff0";
+          ctx.fillRect(110, 30, 100, 60);
+          ctx.fillStyle = "#000";
+          ctx.fillRect(120, 40, 80, 40);
+
+          // Tetris
+          ctx.fillStyle = "#0f0"; ctx.fillRect(130, 40 + tetrisY % 40, 10, 10);
+          ctx.fillStyle = "#f00"; ctx.fillRect(150, 40 + (tetrisY + 10) % 40, 10, 10);
+          ctx.fillStyle = "#00f"; ctx.fillRect(170, 40 + (tetrisY + 20) % 40, 10, 10);
+
+          ctx.fillStyle = "#ff0";
+          ctx.fillRect(140, 100, 40, 5);
+        }
+
+        function drawController(x, y) {
+          ctx.fillStyle = "gray";
+          ctx.beginPath();
+          ctx.roundRect(x, y, 90, 40, 8); ctx.fill();
+          ctx.strokeStyle = "white";
+          ctx.beginPath();
+          ctx.moveTo(x + 45, y); ctx.bezierCurveTo(x + 45, y - 20, x + 25, y - 25, x + 35, y - 40); ctx.stroke();
+          ctx.fillStyle = "black";
+          ctx.beginPath(); ctx.arc(x + 15, y + 20, 5, 0, 2*Math.PI); ctx.fill();
+          ctx.beginPath(); ctx.arc(x + 70, y + 12, 4, 0, 2*Math.PI); ctx.fill();
+          ctx.beginPath(); ctx.arc(x + 80, y + 22, 4, 0, 2*Math.PI); ctx.fill();
+          ctx.beginPath(); ctx.arc(x + 70, y + 32, 4, 0, 2*Math.PI); ctx.fill();
+          ctx.beginPath(); ctx.arc(x + 60, y + 22, 4, 0, 2*Math.PI); ctx.fill();
+        }
+
+        function animate() {
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
+          drawConsole();
+          drawController(115 + Math.sin(Date.now()/300)*5, 160);
+          tetrisY += 1;
+          if (tetrisY > 40) tetrisY = 0;
+          requestAnimationFrame(animate);
+        }
+        animate();
+        </script>
+        '''
+
+        # ======== 8. Interface Interativa =========
+        st.markdown("## Faça uma Previsão com Base nos Dados")
+
+        genero = st.selectbox("Gênero do jogo", sorted(dados['Genre'].unique()))
+        plataforma = st.selectbox("Plataforma", sorted(dados['Platform'].unique()))
+        preco = st.slider("Preço do jogo (USD)",
+                          int(dados['Price'].min()),
+                          int(dados['Price'].max()),
+                          int(dados['Price'].median()))
+
+        if st.button("Prever"):
+            entrada = pd.DataFrame([[genero, plataforma, preco]], columns=['Genre', 'Platform', 'Price'])
+            pred = modelo.predict(entrada)
+            prob = modelo.predict_proba(entrada)[0][1]
+
+            st.markdown("### Resultado da Previsão")
+            if pred[0] == 1:
+                st.success(f"Este jogo provavelmente possui modo multiplayer. Confiança: {prob:.1%}")
+                components.html(multiplayer_html, height=280)
+            else:
+                st.warning(f"Este jogo provavelmente **não** possui modo multiplayer. Confiança: {(1 - prob):.1%}")
+                components.html(singleplayer_html, height=280)
+######sobre
 elif aba == "sobre":
     st.markdown("""
         <style>
@@ -636,58 +990,66 @@ elif aba == "sobre":
             }
         </style>
 
-        <div class="brilho">📘 Sobre o Projeto</div>
+        <div class="brilho">Sobre o Projeto</div>
         <br>
 
         <div class="caixa">
-            <h4>🔍 Origem e Detalhes do Conjunto de Dados</h4>
+            <h4>Origem da Base de Dados</h4>
             <p>
-                Os dados vêm do repositório <b>Kaggle</b>: 
+                O conjunto de dados utilizado foi obtido no <b>Kaggle</b>:
                 <a href="https://www.kaggle.com/datasets/jahnavipaliwal/video-game-reviews-and-ratings" target="_blank">
                     Video Game Reviews and Ratings
                 </a>.
             </p>
             <p>
-                O conjunto inclui avaliações reais para centenas de jogos, com informações como:
-                <ul>
-                    <li>🎮 Nome do jogo</li>
-                    <li>🕹️ Plataforma (PC, Xbox, PlayStation...)</li>
-                    <li>📂 Gênero (RPG, Ação, Puzzle...)</li>
-                    <li>⭐ Nota média dos usuários</li>
-                    <li>✍️ Reviews textuais</li>
-                </ul>
+                A base inclui informações como: nome do jogo, plataforma, gênero, notas dos usuários, resenhas, duração média, faixa etária recomendada, preços e qualidades percebidas (gráfico, trilha sonora e história).
             </p>
         </div>
 
         <hr class="animado">
 
         <div class="caixa">
-            <h4>🎯 Objetivos do Projeto</h4>
+            <h4>Objetivos do Projeto</h4>
             <ul>
-                <li>Exploração interativa dos jogos</li>
-                <li>Recomendações personalizadas</li>
-                <li>Visualização de estatísticas e padrões</li>
-                <li>Análise de sentimentos e nuvem de palavras</li>
+                <li>Explorar interativamente os jogos da base com filtros por gênero e plataforma</li>
+                <li>Exibir estatísticas visuais e comparativas sobre avaliações, tipos de jogos e preferências</li>
+                <li>Realizar análise textual das resenhas dos usuários (nuvem de palavras, sentimentos)</li>
+                <li>Construir um modelo preditivo capaz de estimar se um jogo possui modo multiplayer</li>
             </ul>
         </div>
 
         <hr class="animado">
 
         <div class="caixa">
-            <h4>🛠️ Tecnologias Utilizadas</h4>
+            <h4>Pré-processamento para Machine Learning</h4>
+            <p>O modelo de machine learning desenvolvido teve como base diversas etapas de tratamento de dados, incluindo:</p>
             <ul>
-                <li><b>Streamlit</b> — Interface web</li>
-                <li><b>Pandas</b> — Manipulação de dados</li>
-                <li><b>Plotly</b> — Gráficos interativos</li>
-                <li><b>WordCloud</b> — Visualização textual</li>
-                <li><i>Opcional:</i> TextBlob/VADER — Sentimentos</li>
+                <li>Criação de novas variáveis, como tempo de jogo categorizado e faixa de preço</li>
+                <li>Padronização de variáveis numéricas como nota do usuário, preço e duração</li>
+                <li>Codificação de variáveis categóricas com One-Hot Encoding</li>
+                <li>Mapeamento ordinal de variáveis de qualidade percebida (1 a 5)</li>
+            </ul>
+            <p>Após o pré-processamento, foi construído um modelo com <b>Random Forest</b> para prever a presença de modo multiplayer com base em variáveis como gênero, plataforma e preço.</p>
+        </div>
+
+        <hr class="animado">
+
+        <div class="caixa">
+            <h4>Tecnologias Utilizadas</h4>
+            <ul>
+                <li><b>Streamlit</b> – Interface web interativa</li>
+                <li><b>Pandas</b> – Manipulação e limpeza de dados</li>
+                <li><b>Plotly</b> – Visualização de gráficos interativos</li>
+                <li><b>Matplotlib / Seaborn</b> – Gráficos estáticos e estatísticos</li>
+                <li><b>Scikit-learn</b> – Construção do modelo preditivo</li>
+                <li><b>WordCloud</b> – Nuvem de palavras das resenhas</li>
+                <li><i>TextBlob / VADER</i> – Análise de sentimentos (opcional)</li>
             </ul>
         </div>
     """, unsafe_allow_html=True)
 
-    # Pac-Man animado no canto
-    components.html('''
-    <div id="pacman-canvas-container">
+    # Pac-Man animado
+    components.html('''<div id="pacman-canvas-container">
       <canvas id="pacmanCanvas" width="300" height="300"></canvas>
     </div>
     <style>
@@ -710,88 +1072,45 @@ elif aba == "sobre":
     <script>
     const canvas = document.getElementById("pacmanCanvas");
     const ctx = canvas.getContext("2d");
-
-    const pacman = {
-      x: 30,
-      y: 30,
-      radius: 15,
-      speed: 2,
-      dirX: 1,
-      dirY: 1,
-      steps: 0
-    };
-
+    const pacman = {x: 30, y: 30, radius: 15, speed: 2, dirX: 1, dirY: 1, steps: 0};
     const ghosts = [
       { x: 250, y: 50, color: "red", dirX: -1, dirY: 0 },
       { x: 50, y: 250, color: "cyan", dirX: 1, dirY: -1 },
       { x: 250, y: 250, color: "pink", dirX: -1, dirY: -1 },
       { x: 50, y: 50, color: "orange", dirX: 0, dirY: 1 }
     ];
-
     let dots = [];
     for (let i = 20; i < 280; i += 40) {
       for (let j = 20; j < 280; j += 40) {
         dots.push({ x: i, y: j, eaten: false });
       }
     }
-
     function drawPacman() {
       const angle = 0.3;
       ctx.beginPath();
       const angleOpen = Math.PI * angle;
       const direction = Math.atan2(pacman.dirY, pacman.dirX);
       ctx.moveTo(pacman.x, pacman.y);
-      ctx.arc(
-        pacman.x,
-        pacman.y,
-        pacman.radius,
-        direction + angleOpen,
-        direction - angleOpen,
-        false
-      );
+      ctx.arc(pacman.x, pacman.y, pacman.radius, direction + angleOpen, direction - angleOpen, false);
       ctx.closePath();
       ctx.fillStyle = "yellow";
       ctx.fill();
     }
-
     function drawGhost(g) {
-      const x = g.x;
-      const y = g.y;
-      const r = 14;
-      const footCount = 4;
+      const x = g.x; const y = g.y; const r = 14; const footCount = 4;
       const footWidth = r / footCount;
-
       ctx.beginPath();
       ctx.arc(x, y, r, Math.PI, 0, false);
       ctx.lineTo(x + r, y + r);
       for (let i = 0; i < footCount; i++) {
-        ctx.arc(
-          x + r - (i * footWidth * 2 + footWidth / 2),
-          y + r,
-          footWidth / 2,
-          0,
-          Math.PI,
-          true
-        );
+        ctx.arc(x + r - (i * footWidth * 2 + footWidth / 2), y + r, footWidth / 2, 0, Math.PI, true);
       }
-      ctx.lineTo(x - r, y + r);
-      ctx.closePath();
-      ctx.fillStyle = g.color;
-      ctx.fill();
-
-      ctx.beginPath();
-      ctx.fillStyle = "white";
-      ctx.arc(x - 5, y - 5, 4, 0, 2 * Math.PI);
-      ctx.arc(x + 5, y - 5, 4, 0, 2 * Math.PI);
-      ctx.fill();
-
-      ctx.beginPath();
-      ctx.fillStyle = "blue";
-      ctx.arc(x - 5, y - 5, 2, 0, 2 * Math.PI);
-      ctx.arc(x + 5, y - 5, 2, 0, 2 * Math.PI);
-      ctx.fill();
+      ctx.lineTo(x - r, y + r); ctx.closePath(); ctx.fillStyle = g.color; ctx.fill();
+      ctx.beginPath(); ctx.fillStyle = "white";
+      ctx.arc(x - 5, y - 5, 4, 0, 2 * Math.PI); ctx.arc(x + 5, y - 5, 4, 0, 2 * Math.PI); ctx.fill();
+      ctx.beginPath(); ctx.fillStyle = "blue";
+      ctx.arc(x - 5, y - 5, 2, 0, 2 * Math.PI); ctx.arc(x + 5, y - 5, 2, 0, 2 * Math.PI); ctx.fill();
     }
-
     function drawDots() {
       ctx.fillStyle = "white";
       for (let d of dots) {
@@ -802,38 +1121,26 @@ elif aba == "sobre":
         }
       }
     }
-
     function updatePacman() {
       pacman.x += pacman.speed * pacman.dirX;
       pacman.y += pacman.speed * pacman.dirY;
       pacman.steps++;
-
       if (pacman.steps % 60 === 0) {
-        const dirs = [
-          { dx: 1, dy: 0 },
-          { dx: -1, dy: 0 },
-          { dx: 0, dy: 1 },
-          { dx: 0, dy: -1 }
-        ];
+        const dirs = [{ dx: 1, dy: 0 }, { dx: -1, dy: 0 }, { dx: 0, dy: 1 }, { dx: 0, dy: -1 }];
         const d = dirs[Math.floor(Math.random() * dirs.length)];
-        pacman.dirX = d.dx;
-        pacman.dirY = d.dy;
+        pacman.dirX = d.dx; pacman.dirY = d.dy;
       }
-
       if (pacman.x > canvas.width - pacman.radius || pacman.x < pacman.radius)
         pacman.dirX *= -1;
       if (pacman.y > canvas.height - pacman.radius || pacman.y < pacman.radius)
         pacman.dirY *= -1;
-
       for (let d of dots) {
-        const dx = pacman.x - d.x;
-        const dy = pacman.y - d.y;
+        const dx = pacman.x - d.x; const dy = pacman.y - d.y;
         if (!d.eaten && Math.sqrt(dx * dx + dy * dy) < pacman.radius) {
           d.eaten = true;
         }
       }
     }
-
     function updateGhosts() {
       for (let g of ghosts) {
         g.x += g.dirX * 1.5;
@@ -842,17 +1149,15 @@ elif aba == "sobre":
         if (g.y < 10 || g.y > 290) g.dirY *= -1;
       }
     }
-
     function animate() {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
-      drawDots();
-      drawPacman();
-      ghosts.forEach(drawGhost);
-      updatePacman();
-      updateGhosts();
+      drawDots(); drawPacman(); ghosts.forEach(drawGhost);
+      updatePacman(); updateGhosts();
       requestAnimationFrame(animate);
     }
-
     animate();
-    </script>
-    ''', height=360)
+    </script>''', height=360)
+
+    # ======== 7. Assinatura ========
+    st.markdown("---")
+    st.caption("Desenvolvido por Maiara • Projeto de Análise de Reviews de Jogos com Streamlit")
