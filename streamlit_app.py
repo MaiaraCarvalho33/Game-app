@@ -41,8 +41,8 @@ body, .stApp {
 try:
     df = pd.read_csv("video_game_reviews.csv")
 except FileNotFoundError:
-    st.error("❌ Arquivo 'video_game_reviews.csv' não encontrado.")
-    st.markdown("📥 Baixe em: [Kaggle - Video Game Reviews and Ratings](https://www.kaggle.com/datasets/jahnavipaliwal/video-game-reviews-and-ratings)")
+    st.error(" Arquivo 'video_game_reviews.csv' não encontrado.")
+    st.markdown(" Baixe em: [Kaggle - Video Game Reviews and Ratings](https://www.kaggle.com/datasets/jahnavipaliwal/video-game-reviews-and-ratings)")
     st.stop()
 # Abas
 abas = {
@@ -67,8 +67,8 @@ aba = st.session_state.aba_ativa
 try:
     df = pd.read_csv("video_game_reviews.csv")
 except FileNotFoundError:
-    st.error("❌ Arquivo 'video_game_reviews.csv' não encontrado.")
-    st.markdown("📥 Baixe em: [Kaggle - Video Game Reviews](https://www.kaggle.com/datasets/jahnavipaliwal/video-game-reviews-and-ratings)")
+    st.error(" Arquivo 'video_game_reviews.csv' não encontrado.")
+    st.markdown(" Baixe em: [Kaggle - Video Game Reviews](https://www.kaggle.com/datasets/jahnavipaliwal/video-game-reviews-and-ratings)")
     st.stop()
 
 # ======================= INÍCIO ========================
@@ -89,7 +89,7 @@ if aba == "inicio":
         st.session_state.genero_selecionado = None
 
     plataformas_disponiveis = [p for p in imagens_plataformas if p in df['Platform'].unique()]
-    st.subheader("🕹️ Selecione uma plataforma:")
+    st.subheader("Selecione uma plataforma:")
 
     colunas = st.columns(len(plataformas_disponiveis))
     for i, plataforma in enumerate(plataformas_disponiveis):
@@ -142,7 +142,7 @@ if aba == "inicio":
     }
 
     generos_disponiveis = [g for g in icones_generos if g in df_plataforma['Genre'].unique()]
-    st.subheader("🎭 Selecione um gênero:")
+    st.subheader(" Selecione um gênero:")
 
     colunas_gen = st.columns(len(generos_disponiveis))
     for i, genero_nome in enumerate(generos_disponiveis):
@@ -180,14 +180,14 @@ if aba == "inicio":
     genero = st.session_state.genero_selecionado
     df_filtrado = df_plataforma[df_plataforma['Genre'] == genero]
 
-    st.subheader(f"📋 Jogos para {plataforma} no gênero '{genero}'")
+    st.subheader(f" Jogos para {plataforma} no gênero '{genero}'")
     st.table(df_filtrado[['Game Title']].drop_duplicates().reset_index(drop=True))
 
 elif aba == "estatisticas":
-    st.title("📊 Estatísticas")
+    st.title(" Estatísticas")
 
     # ==== GRÁFICO 1: Quantidade de Jogos por Plataforma ====
-    st.subheader("👥 Quantidade de Jogos por Plataforma")
+    st.subheader(" Quantidade de Jogos por Plataforma")
 
     if 'Min Number of Players' in df.columns:
         df_jogos = df.dropna(subset=['Min Number of Players'])
@@ -212,10 +212,10 @@ elif aba == "estatisticas":
         fig1.update_traces(textposition="none")
         st.plotly_chart(fig1, use_container_width=True)
     else:
-        st.warning("❌ Coluna 'Min Number of Players' não encontrada.")
+        st.warning(" Coluna 'Min Number of Players' não encontrada.")
 
     # ==== GRÁFICO 2: Evolução das Avaliações ao Longo do Tempo ====
-    st.subheader("📈 Evolução das Avaliações ao Longo do Tempo")
+    st.subheader(" Evolução das Avaliações ao Longo do Tempo")
 
     ano_col = next((col for col in df.columns if col.lower() in ['year', 'release year']), None)
 
@@ -241,10 +241,10 @@ elif aba == "estatisticas":
         )
         st.plotly_chart(fig2, use_container_width=True)
     else:
-        st.warning("❌ Coluna de ano ('Year' ou 'Release Year') não encontrada.")
+        st.warning(" Coluna de ano ('Year' ou 'Release Year') não encontrada.")
 
     # ==== GRÁFICO 3: Top 10 Jogos com Melhor Avaliação ====
-    st.subheader("🏆 Top 10 Jogos com Melhor Avaliação")
+    st.subheader(" Top 10 Jogos com Melhor Avaliação")
 
     top10 = df[['Game Title', 'User Rating']].dropna().drop_duplicates()
     top10 = top10.sort_values(by='User Rating', ascending=False).head(10)
@@ -267,7 +267,7 @@ elif aba == "estatisticas":
     st.plotly_chart(fig3, use_container_width=True)
 
     # ==== GRÁFICO 4: Modos de Jogo Disponíveis (Multiplayer ou Não) ====
-    st.subheader("🎮 Modos de Jogo Disponíveis")
+    st.subheader(" Modos de Jogo Disponíveis")
 
     modo_coluna = next((col for col in df.columns if col.lower() in ['game mode', 'mode', 'multiplayer']), None)
 
@@ -298,7 +298,7 @@ elif aba == "estatisticas":
         )
         st.plotly_chart(fig_modos, use_container_width=True)
     else:
-        st.warning("❌ Nenhuma coluna de modo de jogo encontrada no dataset.")
+        st.warning(" Nenhuma coluna de modo de jogo encontrada no dataset.")
 
 
 
@@ -310,9 +310,9 @@ elif aba == "estatisticas":
 elif aba == "recomendador":
     st.title("🎯 Sugestões Personalizadas")
 
-    genero = st.selectbox("🎭 Gênero:", sorted(df['Genre'].dropna().unique()))
-    faixa_preco = st.slider("💰 Preço (USD):", float(df['Price'].min()), float(df['Price'].max()), (0.0, 60.0))
-    faixa_nota = st.slider("⭐ Avaliação:", float(df['User Rating'].min()), float(df['User Rating'].max()), (0.0, 5.0))
+    genero = st.selectbox(" Gênero:", sorted(df['Genre'].dropna().unique()))
+    faixa_preco = st.slider(" Preço (USD):", float(df['Price'].min()), float(df['Price'].max()), (0.0, 60.0))
+    faixa_nota = st.slider(" Avaliação:", float(df['User Rating'].min()), float(df['User Rating'].max()), (0.0, 5.0))
 
     recomendados = df[
         (df['Genre'] == genero) &
@@ -320,16 +320,16 @@ elif aba == "recomendador":
         (df['User Rating'].between(*faixa_nota))
     ][['Game Title', 'Platform', 'Price', 'User Rating']].drop_duplicates()
 
-    st.subheader("🎮 Jogos Recomendados")
+    st.subheader(" Jogos Recomendados")
 
     if recomendados.empty:
-        st.warning("❌ Não foi possível encontrar jogos com os critérios selecionados.")
+        st.warning(" Não foi possível encontrar jogos com os critérios selecionados.")
     else:
         st.dataframe(recomendados.reset_index(drop=True), use_container_width=True)
 
 # ================= BUSCADOR DE JOGOS =================
 elif aba == "buscar":
-    st.title("🔍 Buscador de Jogos")
+    st.title(" Buscador de Jogos")
 
     # Seleção do jogo
     jogo = st.selectbox("Digite ou selecione um jogo:", sorted(df['Game Title'].dropna().unique()))
@@ -337,18 +337,18 @@ elif aba == "buscar":
 
     # Exibe apenas as informações do jogo (sem imagem)
     st.markdown(f"""
-    **📌 Título:** {dados['Game Title']}  
-    **⭐ Avaliação:** {dados['User Rating']}  
-    **🎭 Gênero:** {dados['Genre']}  
-    **💬 Review:** {dados['User Review Text']}  
-    **🎮 Modo de Jogo:** {dados['Game Mode']}  
-    **💰 Preço:** R$ {dados['Price']:.2f}  
+    ** Título:** {dados['Game Title']}  
+    ** Avaliação:** {dados['User Rating']}  
+    ** Gênero:** {dados['Genre']}  
+    ** Review:** {dados['User Review Text']}  
+    ** Modo de Jogo:** {dados['Game Mode']}  
+    ** Preço:** R$ {dados['Price']:.2f}  
     """)
 
 
 #
 if aba == "reviews":
-    st.title("💬 Análise de Reviews")
+    st.title(" Análise de Reviews")
 
     from streamlit.components.v1 import html
 
@@ -367,7 +367,7 @@ if aba == "reviews":
     }
 
     generos_disponiveis = [g for g in icones_generos if g in df['Genre'].unique()]
-    st.subheader("🎭 Selecione um gênero:")
+    st.subheader(" Selecione um gênero:")
 
     colunas_gen = st.columns(len(generos_disponiveis))
     for i, genero_nome in enumerate(generos_disponiveis):
@@ -407,7 +407,7 @@ if aba == "reviews":
     df_gen = df[(df['Genre'] == genero_escolhido) & df['User Review Text'].notna()]
 
     if df_gen.empty:
-        st.warning("❌ Nenhuma review disponível para este gênero.")
+        st.warning(" Nenhuma review disponível para este gênero.")
     else:
         st.subheader("☁️ Nuvem de Palavras")
         texto = " ".join(df_gen['User Review Text'].astype(str))
