@@ -8,6 +8,42 @@ import streamlit.components.v1 as components
 # Configuração da página
 st.set_page_config(page_title="Reviews de Jogos", layout="wide")
 
+# ======= ESTILO GLOBAL E VISUAL MODERNO =======
+st.markdown("""
+<style>
+body, .stApp {
+    background: linear-gradient(to right, #f0f8ff, #e6f0ff);
+    font-family: 'Segoe UI', sans-serif;
+    color: #1e1e1e;
+}
+.stTabs [role="tab"] {
+    background: #2563eb10;
+    border: none;
+    padding: 0.5rem 1rem;
+    margin-right: 4px;
+    border-radius: 12px;
+    color: #1a3c73;
+    font-weight: bold;
+    transition: all 0.2s ease-in-out;
+}
+.stTabs [aria-selected="true"] {
+    background: #2563eb;
+    color: white;
+}
+.stTabs [role="tab"]:hover {
+    background: #1d4ed8;
+    color: white;
+}
+</style>
+""", unsafe_allow_html=True)
+
+# Carrega os dados
+try:
+    df = pd.read_csv("video_game_reviews.csv")
+except FileNotFoundError:
+    st.error("❌ Arquivo 'video_game_reviews.csv' não encontrado.")
+    st.markdown("📥 Baixe em: [Kaggle - Video Game Reviews and Ratings](https://www.kaggle.com/datasets/jahnavipaliwal/video-game-reviews-and-ratings)")
+    st.stop()
 # Abas
 abas = {
     "🏠 Página Inicial": "inicio",
