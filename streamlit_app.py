@@ -329,6 +329,8 @@ elif aba == "recomendador":
 
 # ===== ABA: BUSCADOR DE JOGOS =====
 
+# ===== ABA: BUSCADOR DE JOGOS =====
+
 # DEFINA O DICIONÁRIO AQUI 👇👇👇
 icones_generos = {
     'Action': 'https://cdn-icons-png.flaticon.com/512/16391/16391182.png',
@@ -356,42 +358,50 @@ if aba == "buscar":
     genero = dados['Genre']
     icone_genero = icones_generos.get(genero, "https://cdn-icons-png.flaticon.com/512/5064/5064012.png")
 
-    # Cartão com os dados e ícones
+    # Cartão com os dados e ícones com efeito glow
     st.markdown(f"""
+    <style>
+    .icone-glow:hover {{
+        filter: drop-shadow(0 0 5px #2563eb);
+        transition: 0.3s ease;
+    }}
+    </style>
+
     <div style="background-color:#f4f8ff; padding:20px; border-radius:12px; 
                 box-shadow: 2px 2px 8px rgba(0,0,0,0.1); font-family:Segoe UI;">
       <h4 style="margin-top:0;">
-        <img src="https://cdn-icons-png.flaticon.com/512/4738/4738879.png" width="28" 
+        <img src="https://cdn-icons-png.flaticon.com/512/4738/4738879.png" class="icone-glow" width="28" 
              style="vertical-align:middle; margin-right:8px;">
         <b>{dados['Game Title']}</b>
       </h4>
 
       <p>
-        <img src="https://cdn-icons-png.flaticon.com/512/942/942826.png" width="20" style="vertical-align:middle;"> 
+        <img src="https://cdn-icons-png.flaticon.com/512/942/942826.png" class="icone-glow" width="20" style="vertical-align:middle;"> 
         <strong>Avaliação:</strong> <span style="color:#2563eb;">{dados['User Rating']}</span>
       </p>
 
       <p>
-        <img src="{icone_genero}" width="20" style="vertical-align:middle;"> 
+        <img src="{icone_genero}" class="icone-glow" width="20" style="vertical-align:middle;"> 
         <strong>Gênero:</strong> {genero}
       </p>
 
       <p>
-        <img src="https://cdn-icons-png.flaticon.com/512/8228/8228400.png" width="20" style="vertical-align:middle;"> 
+        <img src="https://cdn-icons-png.flaticon.com/512/8228/8228400.png" class="icone-glow" width="20" style="vertical-align:middle;"> 
         <strong>Review:</strong> <i>“{dados['User Review Text']}”</i>
       </p>
 
       <p>
-        <img src="https://cdn-icons-png.flaticon.com/512/15408/15408140.png" width="20" style="vertical-align:middle;"> 
+        <img src="https://cdn-icons-png.flaticon.com/512/15408/15408140.png" class="icone-glow" width="20" style="vertical-align:middle;"> 
         <strong>Modo de Jogo:</strong> {dados['Game Mode']}
       </p>
 
       <p>
-        <img src="https://cdn-icons-png.flaticon.com/512/8436/8436229.png" width="20" style="vertical-align:middle;"> 
+        <img src="https://cdn-icons-png.flaticon.com/512/8436/8436229.png" class="icone-glow" width="20" style="vertical-align:middle;"> 
         <strong>Preço:</strong> <span style="color:green;">R$ {dados['Price']:.2f}</span>
       </p>
     </div>
     """, unsafe_allow_html=True)
+
 
 
 
@@ -578,13 +588,6 @@ if aba == "reviews":
             </div>
             """, height=150)
 
-
-
-
-
-
-
-
 elif aba == "sobre":
     st.markdown("""
         <style>
@@ -680,165 +683,176 @@ elif aba == "sobre":
                 <li><i>Opcional:</i> TextBlob/VADER — Sentimentos</li>
             </ul>
         </div>
-
-        
     """, unsafe_allow_html=True)
+
+    # Pac-Man animado no canto
     components.html('''
-<div id="pacman-canvas-container">
-  <canvas id="pacmanCanvas" width="300" height="300"></canvas>
-</div>
-<style>
-  #pacman-canvas-container {
-    position: fixed;
-    bottom: 20px;
-    right: 20px;
-    width: 300px;
-    height: 300px;
-    z-index: 1;
-    background: black;
-    border-radius: 12px;
-    overflow: hidden;
-    box-shadow: 0 0 20px rgba(255,255,0,0.4);
-  }
-  canvas {
-    display: block;
-  }
-</style>
-<script>
-const canvas = document.getElementById("pacmanCanvas");
-const ctx = canvas.getContext("2d");
+    <div id="pacman-canvas-container">
+      <canvas id="pacmanCanvas" width="300" height="300"></canvas>
+    </div>
+    <style>
+      #pacman-canvas-container {
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        width: 300px;
+        height: 300px;
+        z-index: 1;
+        background: black;
+        border-radius: 12px;
+        overflow: hidden;
+        box-shadow: 0 0 20px rgba(255,255,0,0.4);
+      }
+      canvas {
+        display: block;
+      }
+    </style>
+    <script>
+    const canvas = document.getElementById("pacmanCanvas");
+    const ctx = canvas.getContext("2d");
 
-const pacman = {
-  x: 30,
-  y: 30,
-  radius: 15,
-  speed: 2,
-  dirX: 1,
-  dirY: 1
-};
+    const pacman = {
+      x: 30,
+      y: 30,
+      radius: 15,
+      speed: 2,
+      dirX: 1,
+      dirY: 1,
+      steps: 0
+    };
 
-const ghosts = [
-  { x: 250, y: 50, color: "red", dirX: -1, dirY: 0 },
-  { x: 50, y: 250, color: "cyan", dirX: 1, dirY: -1 },
-  { x: 250, y: 250, color: "pink", dirX: -1, dirY: -1 },
-  { x: 50, y: 50, color: "orange", dirX: 0, dirY: 1 }
-];
+    const ghosts = [
+      { x: 250, y: 50, color: "red", dirX: -1, dirY: 0 },
+      { x: 50, y: 250, color: "cyan", dirX: 1, dirY: -1 },
+      { x: 250, y: 250, color: "pink", dirX: -1, dirY: -1 },
+      { x: 50, y: 50, color: "orange", dirX: 0, dirY: 1 }
+    ];
 
-let dots = [];
-for (let i = 20; i < 280; i += 40) {
-  for (let j = 20; j < 280; j += 40) {
-    dots.push({ x: i, y: j, eaten: false });
-  }
-}
+    let dots = [];
+    for (let i = 20; i < 280; i += 40) {
+      for (let j = 20; j < 280; j += 40) {
+        dots.push({ x: i, y: j, eaten: false });
+      }
+    }
 
-function drawPacman() {
-  const angle = 0.3;
-  ctx.beginPath();
-  const angleOpen = Math.PI * angle;
-  const direction = Math.atan2(pacman.dirY, pacman.dirX);
-  ctx.moveTo(pacman.x, pacman.y);
-  ctx.arc(
-    pacman.x,
-    pacman.y,
-    pacman.radius,
-    direction + angleOpen,
-    direction - angleOpen,
-    false
-  );
-  ctx.closePath();
-  ctx.fillStyle = "yellow";
-  ctx.fill();
-}
-
-function drawGhost(g) {
-  const x = g.x;
-  const y = g.y;
-  const r = 14;
-  const footCount = 4;
-  const footWidth = r / footCount;
-
-  ctx.beginPath();
-  ctx.arc(x, y, r, Math.PI, 0, false);
-  ctx.lineTo(x + r, y + r);
-  for (let i = 0; i < footCount; i++) {
-    ctx.arc(
-      x + r - (i * footWidth * 2 + footWidth / 2),
-      y + r,
-      footWidth / 2,
-      0,
-      Math.PI,
-      true
-    );
-  }
-  ctx.lineTo(x - r, y + r);
-  ctx.closePath();
-  ctx.fillStyle = g.color;
-  ctx.fill();
-
-  // olhos
-  ctx.beginPath();
-  ctx.fillStyle = "white";
-  ctx.arc(x - 5, y - 5, 4, 0, 2 * Math.PI);
-  ctx.arc(x + 5, y - 5, 4, 0, 2 * Math.PI);
-  ctx.fill();
-
-  ctx.beginPath();
-  ctx.fillStyle = "blue";
-  ctx.arc(x - 5, y - 5, 2, 0, 2 * Math.PI);
-  ctx.arc(x + 5, y - 5, 2, 0, 2 * Math.PI);
-  ctx.fill();
-}
-
-function drawDots() {
-  ctx.fillStyle = "white";
-  for (let d of dots) {
-    if (!d.eaten) {
+    function drawPacman() {
+      const angle = 0.3;
       ctx.beginPath();
-      ctx.arc(d.x, d.y, 3, 0, 2 * Math.PI);
+      const angleOpen = Math.PI * angle;
+      const direction = Math.atan2(pacman.dirY, pacman.dirX);
+      ctx.moveTo(pacman.x, pacman.y);
+      ctx.arc(
+        pacman.x,
+        pacman.y,
+        pacman.radius,
+        direction + angleOpen,
+        direction - angleOpen,
+        false
+      );
+      ctx.closePath();
+      ctx.fillStyle = "yellow";
       ctx.fill();
     }
-  }
-}
 
-function updatePacman() {
-  pacman.x += pacman.speed * pacman.dirX;
-  pacman.y += pacman.speed * pacman.dirY;
+    function drawGhost(g) {
+      const x = g.x;
+      const y = g.y;
+      const r = 14;
+      const footCount = 4;
+      const footWidth = r / footCount;
 
-  if (pacman.x > canvas.width - pacman.radius || pacman.x < pacman.radius) {
-    pacman.dirX *= -1;
-  }
-  if (pacman.y > canvas.height - pacman.radius || pacman.y < pacman.radius) {
-    pacman.dirY *= -1;
-  }
+      ctx.beginPath();
+      ctx.arc(x, y, r, Math.PI, 0, false);
+      ctx.lineTo(x + r, y + r);
+      for (let i = 0; i < footCount; i++) {
+        ctx.arc(
+          x + r - (i * footWidth * 2 + footWidth / 2),
+          y + r,
+          footWidth / 2,
+          0,
+          Math.PI,
+          true
+        );
+      }
+      ctx.lineTo(x - r, y + r);
+      ctx.closePath();
+      ctx.fillStyle = g.color;
+      ctx.fill();
 
-  for (let d of dots) {
-    const dx = pacman.x - d.x;
-    const dy = pacman.y - d.y;
-    if (!d.eaten && Math.sqrt(dx * dx + dy * dy) < pacman.radius) {
-      d.eaten = true;
+      ctx.beginPath();
+      ctx.fillStyle = "white";
+      ctx.arc(x - 5, y - 5, 4, 0, 2 * Math.PI);
+      ctx.arc(x + 5, y - 5, 4, 0, 2 * Math.PI);
+      ctx.fill();
+
+      ctx.beginPath();
+      ctx.fillStyle = "blue";
+      ctx.arc(x - 5, y - 5, 2, 0, 2 * Math.PI);
+      ctx.arc(x + 5, y - 5, 2, 0, 2 * Math.PI);
+      ctx.fill();
     }
-  }
-}
 
-function updateGhosts() {
-  for (let g of ghosts) {
-    g.x += g.dirX * 1.5;
-    g.y += g.dirY * 1.5;
-    if (g.x < 10 || g.x > 290) g.dirX *= -1;
-    if (g.y < 10 || g.y > 290) g.dirY *= -1;
-  }
-}
+    function drawDots() {
+      ctx.fillStyle = "white";
+      for (let d of dots) {
+        if (!d.eaten) {
+          ctx.beginPath();
+          ctx.arc(d.x, d.y, 3, 0, 2 * Math.PI);
+          ctx.fill();
+        }
+      }
+    }
 
-function animate() {
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
-  drawDots();
-  drawPacman();
-  ghosts.forEach(drawGhost);
-  updatePacman();
-  updateGhosts();
-  requestAnimationFrame(animate);
-}
+    function updatePacman() {
+      pacman.x += pacman.speed * pacman.dirX;
+      pacman.y += pacman.speed * pacman.dirY;
+      pacman.steps++;
 
-animate();
-</script>
-''', height=360)
+      if (pacman.steps % 60 === 0) {
+        const dirs = [
+          { dx: 1, dy: 0 },
+          { dx: -1, dy: 0 },
+          { dx: 0, dy: 1 },
+          { dx: 0, dy: -1 }
+        ];
+        const d = dirs[Math.floor(Math.random() * dirs.length)];
+        pacman.dirX = d.dx;
+        pacman.dirY = d.dy;
+      }
+
+      if (pacman.x > canvas.width - pacman.radius || pacman.x < pacman.radius)
+        pacman.dirX *= -1;
+      if (pacman.y > canvas.height - pacman.radius || pacman.y < pacman.radius)
+        pacman.dirY *= -1;
+
+      for (let d of dots) {
+        const dx = pacman.x - d.x;
+        const dy = pacman.y - d.y;
+        if (!d.eaten && Math.sqrt(dx * dx + dy * dy) < pacman.radius) {
+          d.eaten = true;
+        }
+      }
+    }
+
+    function updateGhosts() {
+      for (let g of ghosts) {
+        g.x += g.dirX * 1.5;
+        g.y += g.dirY * 1.5;
+        if (g.x < 10 || g.x > 290) g.dirX *= -1;
+        if (g.y < 10 || g.y > 290) g.dirY *= -1;
+      }
+    }
+
+    function animate() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      drawDots();
+      drawPacman();
+      ghosts.forEach(drawGhost);
+      updatePacman();
+      updateGhosts();
+      requestAnimationFrame(animate);
+    }
+
+    animate();
+    </script>
+    ''', height=360)
