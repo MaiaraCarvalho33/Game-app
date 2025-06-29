@@ -327,23 +327,72 @@ elif aba == "recomendador":
     else:
         st.dataframe(recomendados.reset_index(drop=True), use_container_width=True)
 
-# ================= BUSCADOR DE JOGOS =================
-elif aba == "buscar":
-    st.title(" Buscador de Jogos")
+# ===== ABA: BUSCADOR DE JOGOS =====
+
+# DEFINA O DICIONÁRIO AQUI 👇👇👇
+icones_generos = {
+    'Action': 'https://cdn-icons-png.flaticon.com/512/16391/16391182.png',
+    'Adventure': 'https://cdn-icons-png.flaticon.com/512/5064/5064012.png',
+    'RPG': 'https://cdn-icons-png.flaticon.com/512/10069/10069327.png',
+    'Shooter': 'https://cdn-icons-png.flaticon.com/512/1030/1030305.png',
+    'Puzzle': 'https://cdn-icons-png.flaticon.com/512/3162/3162297.png',
+    'Sports': 'https://cdn-icons-png.flaticon.com/512/4163/4163679.png',
+    'Racing': 'https://cdn-icons-png.flaticon.com/512/4259/4259278.png',
+    'Fighting': 'https://cdn-icons-png.flaticon.com/512/2735/2735992.png',
+    'Simulation': 'https://cdn-icons-png.flaticon.com/512/12011/12011550.png',
+    'Strategy': 'https://cdn-icons-png.flaticon.com/512/3281/3281104.png',
+    'Platformer': 'https://cdn-icons-png.flaticon.com/512/7401/7401039.png'
+}
+
+# CORRETO AGORA:
+if aba == "buscar":
+    st.title("🔍 Buscador de Jogos")
 
     # Seleção do jogo
     jogo = st.selectbox("Digite ou selecione um jogo:", sorted(df['Game Title'].dropna().unique()))
     dados = df[df['Game Title'] == jogo].iloc[0]
 
-    # Exibe apenas as informações do jogo (sem imagem)
+    # Ícone do gênero
+    genero = dados['Genre']
+    icone_genero = icones_generos.get(genero, "https://cdn-icons-png.flaticon.com/512/5064/5064012.png")
+
+    # Cartão com os dados e ícones
     st.markdown(f"""
-    ** Título:** {dados['Game Title']}  
-    ** Avaliação:** {dados['User Rating']}  
-    ** Gênero:** {dados['Genre']}  
-    ** Review:** {dados['User Review Text']}  
-    ** Modo de Jogo:** {dados['Game Mode']}  
-    ** Preço:** R$ {dados['Price']:.2f}  
-    """)
+    <div style="background-color:#f4f8ff; padding:20px; border-radius:12px; 
+                box-shadow: 2px 2px 8px rgba(0,0,0,0.1); font-family:Segoe UI;">
+      <h4 style="margin-top:0;">
+        <img src="https://cdn-icons-png.flaticon.com/512/4738/4738879.png" width="28" 
+             style="vertical-align:middle; margin-right:8px;">
+        <b>{dados['Game Title']}</b>
+      </h4>
+
+      <p>
+        <img src="https://cdn-icons-png.flaticon.com/512/942/942826.png" width="20" style="vertical-align:middle;"> 
+        <strong>Avaliação:</strong> <span style="color:#2563eb;">{dados['User Rating']}</span>
+      </p>
+
+      <p>
+        <img src="{icone_genero}" width="20" style="vertical-align:middle;"> 
+        <strong>Gênero:</strong> {genero}
+      </p>
+
+      <p>
+        <img src="https://cdn-icons-png.flaticon.com/512/8228/8228400.png" width="20" style="vertical-align:middle;"> 
+        <strong>Review:</strong> <i>“{dados['User Review Text']}”</i>
+      </p>
+
+      <p>
+        <img src="https://cdn-icons-png.flaticon.com/512/15408/15408140.png" width="20" style="vertical-align:middle;"> 
+        <strong>Modo de Jogo:</strong> {dados['Game Mode']}
+      </p>
+
+      <p>
+        <img src="https://cdn-icons-png.flaticon.com/512/8436/8436229.png" width="20" style="vertical-align:middle;"> 
+        <strong>Preço:</strong> <span style="color:green;">R$ {dados['Price']:.2f}</span>
+      </p>
+    </div>
+    """, unsafe_allow_html=True)
+
 
 
 
