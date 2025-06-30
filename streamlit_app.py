@@ -8,46 +8,29 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.preprocessing import OneHotEncoder, StandardScaler
 from sklearn.compose import ColumnTransformer
 from sklearn.pipeline import Pipeline
-# Configuração da página
+
+# ========== CONFIGURAÇÃO INICIAL ==========
 st.set_page_config(page_title="Reviews de Jogos", layout="wide")
 
-# ======= ESTILO GLOBAL E VISUAL MODERNO =======
+# ===== CSS GLOBAL PARA BOTÕES ESTILIZADOS =====
 st.markdown("""
-<style>
-body, .stApp {
-    background: linear-gradient(to right, #f0f8ff, #e6f0ff);
-    font-family: 'Segoe UI', sans-serif;
-    color: #1e1e1e;
-}
-.stTabs [role="tab"] {
-    background: #2563eb10;
-    border: none;
-    padding: 0.5rem 1rem;
-    margin-right: 4px;
-    border-radius: 12px;
-    color: #1a3c73;
-    font-weight: bold;
-    transition: all 0.2s ease-in-out;
-}
-.stTabs [aria-selected="true"] {
-    background: #2563eb;
-    color: white;
-}
-.stTabs [role="tab"]:hover {
-    background: #1d4ed8;
-    color: white;
-}
-</style>
+    <style>
+    .stButton > button {
+        background-color: #2563eb !important;
+        color: white !important;
+        border: none;
+        border-radius: 12px;
+        padding: 8px 16px;
+        font-weight: 500;
+        transition: background-color 0.3s ease;
+    }
+    .stButton > button:hover {
+        background-color: #1d4ed8 !important;
+    }
+    </style>
 """, unsafe_allow_html=True)
 
-# Carrega os dados
-try:
-    df = pd.read_csv("video_game_reviews.csv")
-except FileNotFoundError:
-    st.error(" Arquivo 'video_game_reviews.csv' não encontrado.")
-    st.markdown(" Baixe em: [Kaggle - Video Game Reviews and Ratings](https://www.kaggle.com/datasets/jahnavipaliwal/video-game-reviews-and-ratings)")
-    st.stop()
-# Abas
+# ====== ABAS DE NAVEGAÇÃO ======
 abas = {
     "🏠 Página Inicial": "inicio",
     "📊 Estatísticas": "estatisticas",
@@ -55,7 +38,7 @@ abas = {
     "🔍 Buscador de Jogos": "buscar",
     "💬 Análise de Reviews": "reviews",
     "📂 Pré-processamento ": "Pré-processamento",
-   "🧠 Modelo de ML": "modelo",
+    "🧠 Modelo de ML": "modelo",
     "📘 Sobre": "sobre"
 }
 
@@ -68,13 +51,14 @@ for i, (nome, chave) in enumerate(abas.items()):
             st.session_state.aba_ativa = chave
 aba = st.session_state.aba_ativa
 
-# Carrega dados
+# ====== CARREGAMENTO DO DATASET ======
 try:
     df = pd.read_csv("video_game_reviews.csv")
 except FileNotFoundError:
-    st.error(" Arquivo 'video_game_reviews.csv' não encontrado.")
-    st.markdown(" Baixe em: [Kaggle - Video Game Reviews](https://www.kaggle.com/datasets/jahnavipaliwal/video-game-reviews-and-ratings)")
+    st.error("❌ Arquivo 'video_game_reviews.csv' não encontrado.")
+    st.markdown("🔗 Baixe o dataset em: [Kaggle - Video Game Reviews](https://www.kaggle.com/datasets/jahnavipaliwal/video-game-reviews-and-ratings)")
     st.stop()
+
 
 # ======================= INÍCIO ========================
 if aba == "inicio":
